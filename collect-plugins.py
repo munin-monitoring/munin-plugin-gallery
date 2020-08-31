@@ -287,11 +287,21 @@ async def import_plugins():
         plugin_workers.append(task)
     await asyncio.gather(*plugin_source_workers, return_exceptions=True)
     await pending_plugins.join()
-    statistics = {"all": [], "missing_doc": [], "missing_family": [], "missing_capabilities": [], "unexpected_categories": []}
     all_plugins = []
     while not initialized_plugins.empty():
         all_plugins.append(await initialized_plugins.get())
-    for plugin in all_plugins:
+    return all_plugins
+
+
+def get_plugin_statistics(plugins):
+    statistics = {
+        "all": [],
+        "missing_doc": [],
+        "missing_family": [],
+        "missing_capabilities": [],
+        "unexpected_categories": [],
+    }
+    for plugin in plugins:
         statistics["all"].append(plugin)
         if not plugin.documentation:
             statistics["missing_doc"].append(plugin)
@@ -301,8 +311,7 @@ async def import_plugins():
             statistics["missing_capabilities"].append(plugin)
         if plugin.get_unexpected_categories():
             statistics["unexpected_categories"].append(plugin)
-    for key, matches in statistics.items():
-        print("{}: {:d}".format(key, len(matches)))
+    return statistics
 
 
 async def import_local_plugins(plugin_filenames):
@@ -316,7 +325,9 @@ def main():
     if len(sys.argv) > 1:
         asyncio.run(import_local_plugins(sys.argv[1:]))
     else:
-        asyncio.run(import_plugins())
+        plugins = asyncio.run(import_plugins())
+        for key, matches in get_plugin_statistics(plugins).items():
+            print("{}: {:d}".format(key, len(matches)))
 
 
 if __name__ == "__main__":
