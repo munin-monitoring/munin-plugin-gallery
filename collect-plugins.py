@@ -50,6 +50,27 @@ class MuninPlugin:
     FAMILY_REGEX = re.compile(r"^.*#%#\s*family\s*=\s*(\w+).*$", flags=re.MULTILINE)
     CAPABILITIES_REGEX = re.compile(
         r"^.*#%#\s*capabilities\s*=\s*(?:\s*(\w+))*.*$", flags=re.MULTILINE)
+    CATEGORY_LINE_BLACKLIST_REGEXES = (
+        re.compile(r"(?:label|documentation|\bthe\b|filterwarnings)"),
+        # ignore existing ambiguous word combinations
+        re.compile(r"(?:env\.category|/category/|category queries|category\.|force_category)"),
+        # ignore SQL expressions
+        re.compile(r"select.*from.*(?:join|where)"),
+        # ignore any kind of comments
+        re.compile(r"^\s*(?:#|//|/\*)"),
+        # no variable may be part of the category name
+        re.compile(r"category.*[&\$]"),
+    )
+    CATEGORY_REGEX = re.compile(
+        r"^(?P<line>.*[^$.]category[^\w\n]+(?P<category>\w+).*)$", flags=re.MULTILINE)
+    # http://guide.munin-monitoring.org/en/latest/reference/graph-category.html#well-known-categories
+    WELL_KNOWN_CATEGORIES = {
+        "1sec", "antivirus", "appserver", "auth", "backup", "chat", "cloud", "cms", "cpu", "db",
+        "devel", "disk", "dns", "filetransfer", "forum", "fs", "fw", "games", "htc",
+        "loadbalancer", "mail", "mailinglist", "memory", "munin", "network", "other", "printing",
+        "processes", "radio", "san", "search", "security", "sensors", "spamfilter", "streaming",
+        "system", "time", "tv", "virtualization", "voip", "webserver", "wiki", "wireless",
+    }
 
     def __init__(self, plugin_filename):
         self._plugin_filename = plugin_filename
@@ -83,6 +104,7 @@ class MuninPlugin:
             self.documentation = await self._parse_documentation()
             self.family = self._parse_family()
             self.capabilities = self._parse_family()
+            self.categories = self._parse_categories()
             self._is_initialized = True
 
     async def _parse_documentation(self):
@@ -115,11 +137,27 @@ class MuninPlugin:
         family_match = self.FAMILY_REGEX.search(self.plugin_code)
         return family_match.groups()[0] if family_match else None
 
+    def _parse_categories(self):
+        categories = set()
+        for line, category in self.CATEGORY_REGEX.findall(self.plugin_code):
+            if len(line.splitlines()) != 1:
+                continue
+            if any(blacklist_regex.search(line)
+                   for blacklist_regex in self.CATEGORY_LINE_BLACKLIST_REGEXES):
+                continue
+            categories.add(category.lower())
+        return categories
+
+    def get_unexpected_categories(self):
+        return self.categories.difference(self.WELL_KNOWN_CATEGORIES)
+
     def get_details(self):
         return {
             "documentation": bool(self.documentation),
             "family": self.family,
             "capabilities": self.capabilities,
+            "categories": set(self.categories),
+            "expected_categories": self.get_unexpected_categories(),
             "image_filenames": dict(self._image_filenames),
         }
 
@@ -249,7 +287,7 @@ async def import_plugins():
         plugin_workers.append(task)
     await asyncio.gather(*plugin_source_workers, return_exceptions=True)
     await pending_plugins.join()
-    statistics = {"all": [], "missing_doc": [], "missing_family": [], "missing_capabilities": []}
+    statistics = {"all": [], "missing_doc": [], "missing_family": [], "missing_capabilities": [], "unexpected_categories": []}
     all_plugins = []
     while not initialized_plugins.empty():
         all_plugins.append(await initialized_plugins.get())
@@ -261,6 +299,8 @@ async def import_plugins():
             statistics["missing_family"].append(plugin)
         if not plugin.capabilities:
             statistics["missing_capabilities"].append(plugin)
+        if plugin.get_unexpected_categories():
+            statistics["unexpected_categories"].append(plugin)
     for key, matches in statistics.items():
         print("{}: {:d}".format(key, len(matches)))
 
