@@ -1,0 +1,37 @@
+<nav class="navbar navbar-expand-md navbar-light pl-0">
+    <button class="navbar-toggler navbar-toggler-right collapsed" type="button" data-toggle="collapse" data-target="#sidenav-left-collapse" aria-controls="sidenav-left-collapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+     <div class="collapse navbar-collapse align-items-start flex-column" id="sidenav-left-collapse">
+        {{- if not .Site.Params.disableSearch}}
+            <form class="form-inline my-2 my-lg-0 searchbox">
+                <input class="form-control mr-sm-2 w-100" data-search-input id="search-by" type="text" placeholder="Search">
+            </form>
+        {{- end}}
+         <ul class="navbar-nav flex-column pt-3">
+           {{- $currentNode := . }}
+           {{ range $taxonomy_name, $taxonomy := .Site.Taxonomies }}
+             {{ with $.Site.GetPage (printf "/%s" $taxonomy_name) }}
+               <li data-nav-id="{{.RelPermalink}}" class="nav-item my-1 haschildren
+                   {{- if .IsAncestor $currentNode}} parent{{end}}
+                   {{- if eq .RelPermalink $currentNode.RelPermalink}} active{{end}}
+                   {{- if .Params.alwaysopen}} alwaysopen{{end -}}
+                   ">
+                 <a href="{{ .Permalink }}" class="nav-link p-0"><h6>{{ .Title }}</h6></a>
+                 <ul class="list-unstyled ml-2">
+                   {{ range $key, $value := $taxonomy }}
+                   <li>
+                     {{- $term_page := $.Site.GetPage (printf "/%s/%s" $taxonomy_name $key) -}}
+                     <a href="{{ $term_page.Permalink }}" class="nav-link p-0">
+                       {{ $term_page.Title }} ({{ $taxonomy.Count $key }})
+                     </a>
+                   </li>
+                   {{ end }}
+                 </ul>
+               </li>
+             {{ end }}
+          {{ end }}
+        </ul>
+    </div>
+</nav>
