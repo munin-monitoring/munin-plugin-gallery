@@ -1,0 +1,25 @@
+{{ define "main" }}
+    {{ $data := .Data }}
+  <article class="cf pa3 pa4-m pa4-l">
+    <div class="measure-wide-l center f4 lh-copy nested-copy-line-height nested-links nested-img mid-gray">
+      {{ .Content }}
+    </div>
+    {{ if .Params.url_doc }}
+      <p>Documentation: <a href="{{ .Params.url_doc }}">{{ .Data.Plural | humanize }}</a></p>
+    {{ end }}
+  </article>
+  <div class="mw8 center">
+    <section class="ph4">
+      {{- $taxonomy_name := $.Data.Plural | urlize -}}
+      <h1>{{ .Data.Plural | humanize }}</h1>
+      <ul>
+        {{ range $key, $value := .Data.Terms }}
+          {{- $term_page := $.Site.GetPage (printf "/%s/%s" $taxonomy_name $key) -}}
+          <li>
+            <a href="{{ $term_page.RelPermalink }}" class="link blue hover-black">{{ $term_page.Title }}</a> ({{ $value.Count }})
+          </li>
+        {{ end }}
+      </ul>
+    </section>
+  </div>
+{{ end }}

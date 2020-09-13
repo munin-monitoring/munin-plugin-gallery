@@ -1,0 +1,24 @@
+{{ define "main" }}
+    {{ $data := .Data }}
+  <article class="cf pa3 pa4-m pa4-l">
+    {{ if .Content }}
+      <div class="measure-wide-l center f4 lh-copy nested-copy-line-height nested-links nested-img mid-gray">
+        {{ .Content }}
+      </div>
+    {{ else }}
+      <h1>{{ .Section | title | singularize }}: {{ .Title }}</h1>
+    {{ end }}
+  </article>
+  <div class="mw8 center">
+    <section class="ph4">
+      The following plugins belong to the {{ .Section | singularize }} <i>{{ .Title }}</i>.
+      <ul>
+        {{ range .Data.Pages }}
+          <li>
+            <a href="{{ .Permalink}}">{{ .Title }}</a> {{ with .Params.summary }} - {{ . }}{{ end }}
+          </li>
+        {{ end }}
+      </ul>
+    </section>
+  </div>
+{{ end }}

@@ -1,0 +1,3 @@
+[submodule "hugo-base/themes/ace-documentation"]
+	path = hugo-base/themes/ace-documentation
+	url = https://github.com/vantagedesign/ace-documentation.git

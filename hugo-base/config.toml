@@ -1,0 +1,53 @@
+baseURL = "http://gallery.munin-monitoring.org/"
+languageCode = "en-US"
+title = "Munin Plugin Gallery"
+theme = "ace-documentation"
+
+MetaDataFormat = "yaml"
+enableRobotsTXT = true
+
+[outputs]
+  # enable JSON output for "search" via lunr (see index.json)
+  home = [ "HTML", "RSS", "JSON"]
+
+[sitemap]
+  changefreq = "monthly"
+  priority = 0.5
+  filename = "sitemap.xml"
+
+[markup]
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = true
+
+[params]
+  site_logo = "/logo.svg"
+  description = "Collection of all plugins maintained by the Munin developers"
+  # disable the navigation footer provided by ace-documentation
+  disableReadmoreNav = true
+
+[taxonomies]
+  capability = "capabilities"
+  category = "categories"
+  documentation_status = "documentation_status"
+  family = "families"
+  implementation_language = "implementation_languages"
+  keyword = "keywords"
+  repository = "repositories"
+
+
+[[menu.shortcuts]]
+  name = "Contribute"
+  url = "/contribute/"
+  weight = 10
+
+[[menu.shortcuts]]
+  name = "Statistics"
+  url = "/statistics/"
+  weight = 60
+
+[[menu.shortcuts]]
+  name = "Sources"
+  url = "/repositories/"
+  weight = 80
