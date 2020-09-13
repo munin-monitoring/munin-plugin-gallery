@@ -43,6 +43,16 @@ enableRobotsTXT = true
   weight = 10
 
 [[menu.shortcuts]]
+  name = "Categories"
+  url = "/categories/"
+  weight = 30
+
+[[menu.shortcuts]]
+  name = "Keywords"
+  url = "/keywords/"
+  weight = 40
+
+[[menu.shortcuts]]
   name = "Statistics"
   url = "/statistics/"
   weight = 60

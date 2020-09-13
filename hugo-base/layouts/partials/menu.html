@@ -13,23 +13,25 @@
            {{- $currentNode := . }}
            {{ range $taxonomy_name, $taxonomy := .Site.Taxonomies }}
              {{ with $.Site.GetPage (printf "/%s" $taxonomy_name) }}
-               <li data-nav-id="{{.RelPermalink}}" class="nav-item my-1 haschildren
-                   {{- if .IsAncestor $currentNode}} parent{{end}}
-                   {{- if eq .RelPermalink $currentNode.RelPermalink}} active{{end}}
-                   {{- if .Params.alwaysopen}} alwaysopen{{end -}}
-                   ">
-                 <a href="{{ .Permalink }}" class="nav-link p-0"><h6>{{ .Title }}</h6></a>
-                 <ul class="list-unstyled ml-2">
-                   {{ range $key, $value := $taxonomy }}
-                   <li>
-                     {{- $term_page := $.Site.GetPage (printf "/%s/%s" $taxonomy_name $key) -}}
-                     <a href="{{ $term_page.Permalink }}" class="nav-link p-0">
-                       {{ $term_page.Title }} ({{ $taxonomy.Count $key }})
-                     </a>
-                   </li>
-                   {{ end }}
-                 </ul>
-               </li>
+               {{ if not (default false .Params.ignore_in_sidebar) }}
+                 <li data-nav-id="{{.RelPermalink}}" class="nav-item my-1 haschildren
+                     {{- if .IsAncestor $currentNode}} parent{{end}}
+                     {{- if eq .RelPermalink $currentNode.RelPermalink}} active{{end}}
+                     {{- if .Params.alwaysopen}} alwaysopen{{end -}}
+                     ">
+                   <a href="{{ .Permalink }}" class="nav-link p-0"><h6>{{ .Title }}</h6></a>
+                   <ul class="list-unstyled ml-2">
+                     {{ range $key, $value := $taxonomy }}
+                     <li>
+                       {{- $term_page := $.Site.GetPage (printf "/%s/%s" $taxonomy_name $key) -}}
+                       <a href="{{ $term_page.Permalink }}" class="nav-link p-0">
+                         {{ $term_page.Title }} ({{ $taxonomy.Count $key }})
+                       </a>
+                     </li>
+                     {{ end }}
+                   </ul>
+                 </li>
+               {{ end }}
              {{ end }}
           {{ end }}
         </ul>

@@ -1,5 +1,6 @@
 ---
 title: "Keywords"
+ignore_in_sidebar: true
 ---
 
 Various keywords are collected for each plugin.
