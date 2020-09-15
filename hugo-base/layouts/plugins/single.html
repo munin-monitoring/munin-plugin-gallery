@@ -7,7 +7,96 @@
     margin: 1rem;
     clear: right;
   }
+
+  .munin-plugin-overview {
+    float: right;
+  }
+
+  .munin-plugin-overview dt::after {
+    content: ":";
+  }
+
+  .munin-plugin-overview dl {
+    display: grid;
+    grid-template-columns: max-content auto;
+  }
+
+  .munin-plugin-overview dt {
+    grid-column-start: 1;
+    padding-right: 5px;
+  }
+
+  .munin-plugin-overview dd {
+    grid-column-start: 2;
+  }
+
+  .munin-plugin-overview dd ul{
+    padding-left: 0;
+    margin-left: 0;
+    margin-bottom: 0;
+  }
+
+  .munin-plugin-overview dd li{
+    list-style-type: none;
+  }
 </style>
+
+<div class="munin-plugin-overview">
+  <dl>
+    {{ with .Params.repositories }}
+      {{- $page := $.Site.GetPage (printf "/repositories/%s" (index . 0)) -}}
+      <dt>Repository</dt>
+      <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
+    {{ end }}
+    {{ with .Date }}
+      <dt>Last change</dt>
+      <dd>{{ . | dateFormat "2006-01-02" }}</dd>
+    {{ end }}
+    {{ with .Params.categories }}
+      <dt>Graph Categories</dt>
+      <dd>
+        <ul>
+          {{ range . }}
+            {{- $page := $.Site.GetPage (printf "/categories/%s" .) -}}
+            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
+          {{ end }}
+        </ul>
+      </dd>
+    {{ end }}
+    {{ with .Params.families }}
+      {{- $page := $.Site.GetPage (printf "/families/%s" (index . 0)) -}}
+      <dt>Family</dt>
+      <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
+    {{ end }}
+    {{ with .Params.capabilities }}
+      <dt>Capabilities</dt>
+      <dd>
+        <ul>
+          {{ range . }}
+            {{- $page := $.Site.GetPage (printf "/capabilities/%s" .) -}}
+            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
+          {{ end }}
+        </ul>
+      </dd>
+    {{ end }}
+    {{ with .Params.keywords }}
+      <dt>Keywords</dt>
+      <dd>
+        <ul>
+          {{ range . }}
+            {{- $page := $.Site.GetPage (printf "/keywords/%s" .) -}}
+            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
+          {{ end }}
+        </ul>
+      </dd>
+    {{ end }}
+    {{ with .Params.implementation_languages }}
+      {{- $page := $.Site.GetPage (printf "/implementation_languages/%s" (index . 0)) -}}
+      <dt>Programming Language</dt>
+      <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
+    {{ end }}
+  </dl>
+</div>
 
 <h1>{{ .Title }}</h1>
 
