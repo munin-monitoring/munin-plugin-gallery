@@ -535,7 +535,7 @@ class MuninPluginsHugoExport:
         if plugin.capabilities:
             result["capabilities"] = tuple(plugin.capabilities)
         if plugin.path_keywords:
-            result["keywords"] = tuple(plugin.path_keywords)
+            result["keywords"] = tuple(sorted(plugin.path_keywords))
         if plugin.implementation_language:
             result["implementation_languages"] = [plugin.implementation_language]
         if plugin.documentation:
