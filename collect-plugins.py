@@ -110,10 +110,11 @@ class MuninPlugin:
     CAPITALIZATION_UPPER = {"IP", "TCP", "UDP"}
     CAPITALIZATION_LOWER = {"a", "the", "in", "for", "to", "and"}
 
-    def __init__(self, plugin_filename, repository_source=None):
+    def __init__(self, plugin_filename, repository_source=None, name=None, language=None):
         self._plugin_filename = plugin_filename
         self.repository_source = repository_source
-        self.name = os.path.basename(plugin_filename)
+        self.name = os.path.basename(plugin_filename) if name is None else name
+        self.implementation_language = language
         for suffix in self.OPTIONAL_PLUGIN_FILENAME_SUFFIXES:
             if self.name.endswith(suffix):
                 self.name = self.name[:-len(suffix)]
@@ -151,7 +152,8 @@ class MuninPlugin:
                 self.changed_timestamp = None
             self.path_keywords = tuple(self._get_keywords())
             self.summary = self._guess_summary()
-            self.implementation_language = self._parse_implementation_language()
+            if self.implementation_language is None:
+                self.implementation_language = self._parse_implementation_language()
             self._is_initialized = True
 
     def _get_keywords(self):
@@ -415,6 +417,15 @@ class MuninPluginRepository:
                 # every executable file is assumed to be a plugin
                 if status.st_mode & 0o100 > 0:
                     yield MuninPlugin(full_path, self)
+                elif filename.endswith(".c"):
+                    yield MuninPlugin(
+                        full_path, repository_source=self, name=filename[:-2], language="c")
+                elif filename.endswith(".cpp"):
+                    yield MuninPlugin(
+                        full_path, repository_source=self, name=filename[:-4], language="cpp")
+                else:
+                    # this file is probably not a plugin
+                    pass
 
     def get_relative_path(self, path):
         return str(pathlib.Path(path).relative_to(self._plugins_directory))
