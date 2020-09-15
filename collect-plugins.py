@@ -110,7 +110,7 @@ class MuninPlugin:
     CAPITALIZATION_UPPER = {"IP", "TCP", "UDP"}
     CAPITALIZATION_LOWER = {"a", "the", "in", "for", "to", "and"}
 
-    def __init__(self, plugin_filename, repository_source):
+    def __init__(self, plugin_filename, repository_source=None):
         self._plugin_filename = plugin_filename
         self.repository_source = repository_source
         self.name = os.path.basename(plugin_filename)
@@ -144,16 +144,22 @@ class MuninPlugin:
             self.family = self._parse_family()
             self.capabilities = self._parse_capabilities()
             self.categories = self._parse_categories()
-            self.changed_timestamp = await self.repository_source.get_file_timestamp(
-                self._plugin_filename)
+            if self.repository_source:
+                self.changed_timestamp = await self.repository_source.get_file_timestamp(
+                    self._plugin_filename)
+            else:
+                self.changed_timestamp = None
             self.path_keywords = tuple(self._get_keywords())
             self.summary = self._guess_summary()
             self.implementation_language = self._parse_implementation_language()
             self._is_initialized = True
 
     def _get_keywords(self):
-        relative_path = self.repository_source.get_relative_path(
-            os.path.dirname(self._plugin_filename))
+        if self.repository_source:
+            relative_path = self.repository_source.get_relative_path(
+                os.path.dirname(self._plugin_filename))
+        else:
+            relative_path = ""
         for token in relative_path.lower().split(os.path.sep):
             for regex in self.KEYWORDS_REMOVAL_REGEXES:
                 token = regex.sub("", token)
@@ -443,8 +449,9 @@ class MuninPluginsHugoExport:
     def get_hugo_frontmatter(self, plugin):
         result = {
             "title": plugin.name,
-            "repositories": [plugin.repository_source.name],
         }
+        if plugin.repository_source:
+            result["repositories"] = [plugin.repository_source.name]
         if plugin.documentation:
             result["documentation_status"] = ["documented"]
         else:
