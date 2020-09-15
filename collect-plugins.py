@@ -431,6 +431,37 @@ class MuninPluginRepository:
         return str(pathlib.Path(path).relative_to(self._plugins_directory))
 
 
+class ContentIndexer:
+    """ a trivial content indexer for reducing the given text to a minimal set of words
+
+    Specific lines, special characters and superfluous whitespace is removed.
+    """
+
+    # ignore lines with headings and magic markers
+    IGNORE_LINE_REGEX = re.compile(r"(^#|^\s+#%#)")
+    REMOVAL_REGEXES = (
+        # remove common (very unspecific) words
+        re.compile(r"\b(copyright|munin|plugin)\b", flags=re.IGNORECASE),
+        # remove all special characters
+        re.compile(r"[^\w\s.]"),
+    )
+    MERGE_WHITESPACE_REGEX = re.compile(r"\s+")
+
+    @classmethod
+    def get_indexing_content(cls, text):
+        result = []
+        for line in text.splitlines():
+            if cls.IGNORE_LINE_REGEX.search(line):
+                continue
+            for regex in cls.REMOVAL_REGEXES:
+                line = regex.sub(" ", line)
+            line = cls.MERGE_WHITESPACE_REGEX.sub(" ", line)
+            line = line.strip()
+            if line:
+                result.append(line)
+        return " ".join(result)
+
+
 class MuninPluginsHugoExport:
 
     MISSING_DOCUMENTATION_TEXT = "Sadly there is no documentation for this plugin"
@@ -481,6 +512,8 @@ class MuninPluginsHugoExport:
             result["keywords"] = tuple(plugin.path_keywords)
         if plugin.implementation_language:
             result["implementation_languages"] = [plugin.implementation_language]
+        if plugin.documentation:
+            result["indexing_content"] = ContentIndexer.get_indexing_content(plugin.documentation)
         return result
 
     async def add(self, plugin):
