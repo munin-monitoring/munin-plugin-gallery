@@ -52,6 +52,29 @@ PLUGIN_SOURCES = (
 )
 
 
+class MuninPluginExampleGraph(collections.namedtuple("MuninPluginExampleGraph", "key filename")):
+
+    def _get_sort_key(self):
+        """ calculate a sorting weight based on the "key"
+
+        The special keys for daily, weekly, monthly and yearly graphs are supposed to appear first.
+        Numeric keys follow.
+        All other keys are used as sorting keys without further processing.
+        """
+        try:
+            return ({"day": -4, "weeky": -3, "month": -2, "year": -1}[self.key.lower()], "")
+        except KeyError:
+            pass
+        try:
+            return (int(self.key), "")
+        except ValueError:
+            pass
+        return (100, self.key)
+
+    def __lt__(self, other):
+        return self._get_sort_key() < other._get_sort_key()
+
+
 class MuninPluginRepositoryProcessingError(IOError):
     """ any kind of error happened while processing a plugin source"""
 
@@ -111,20 +134,20 @@ class MuninPlugin:
     CAPITALIZATION_LOWER = {"a", "the", "in", "for", "to", "and"}
 
     def __init__(self, plugin_filename, repository_source=None, name=None, language=None):
-        self._plugin_filename = plugin_filename
+        self.plugin_filename = plugin_filename
         self.repository_source = repository_source
         self.name = os.path.basename(plugin_filename) if name is None else name
         self.implementation_language = language
         for suffix in self.OPTIONAL_PLUGIN_FILENAME_SUFFIXES:
             if self.name.endswith(suffix):
                 self.name = self.name[:-len(suffix)]
-        self._image_filenames = self._find_images()
+        self.example_graphs = self._find_images()
         self._is_initialized = False
 
     def _find_images(self):
-        example_graphs = {}
+        example_graphs = []
         example_graph_directory = os.path.join(
-            os.path.dirname(self._plugin_filename), EXAMPLE_GRAPH_DIRECTORY_NAME)
+            os.path.dirname(self.plugin_filename), EXAMPLE_GRAPH_DIRECTORY_NAME)
         example_graph_filename_pattern = re.compile(self.name + self.EXAMPLE_GRAPH_SUFFIX_REGEX)
         try:
             graph_filenames = os.listdir(example_graph_directory)
@@ -134,12 +157,14 @@ class MuninPlugin:
             match = example_graph_filename_pattern.match(graph_filename)
             if match:
                 image_key = match.groups()[0]
-                example_graphs[image_key] = graph_filename
+                example_graphs.append(MuninPluginExampleGraph(
+                    image_key, os.path.join(example_graph_directory, graph_filename)))
+        example_graphs.sort()
         return example_graphs
 
     async def initialize(self):
         if not self._is_initialized:
-            with open(self._plugin_filename, "r") as raw:
+            with open(self.plugin_filename, "r") as raw:
                 self.plugin_code = raw.read()
             self.documentation = await self._parse_documentation()
             self.family = self._parse_family()
@@ -147,7 +172,7 @@ class MuninPlugin:
             self.categories = self._parse_categories()
             if self.repository_source:
                 self.changed_timestamp = await self.repository_source.get_file_timestamp(
-                    self._plugin_filename)
+                    self.plugin_filename)
             else:
                 self.changed_timestamp = None
             self.path_keywords = tuple(self._get_keywords())
@@ -159,7 +184,7 @@ class MuninPlugin:
     def _get_keywords(self):
         if self.repository_source:
             relative_path = self.repository_source.get_relative_path(
-                os.path.dirname(self._plugin_filename))
+                os.path.dirname(self.plugin_filename))
         else:
             relative_path = ""
         for token in relative_path.lower().split(os.path.sep):
@@ -203,7 +228,7 @@ class MuninPlugin:
             return None
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                *("perldoc", "-o", "markdown", "-F", "-T", self._plugin_filename),
+                *("perldoc", "-o", "markdown", "-F", "-T", self.plugin_filename),
                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         except OSError as exc:
             logging.warning("Failed to execute perldoc: {}".format(exc))
@@ -526,11 +551,21 @@ class MuninPluginsHugoExport:
             return False
         documentation = plugin.documentation or self.MISSING_DOCUMENTATION_TEXT
         source_path = os.path.join(plugin_directory, "source")
-        with open(source_path, "w") as code_file:
-            code_file.write(plugin.plugin_code)
+        shutil.copy(plugin.plugin_filename, source_path)
+        local_graphs = []
+        for graph in plugin.example_graphs:
+            destination = os.path.join(
+                plugin_directory, graph.key + os.path.splitext(graph.filename)[1])
+            shutil.copy(graph.filename, destination)
+            local_graphs.append({
+                "key": graph.key,
+                "path": os.path.basename(destination),
+            })
         with open(os.path.join(plugin_directory, "index.md"), "w") as plugin_file:
             plugin_file.write("---" + os.linesep)
             meta_data = self.get_hugo_frontmatter(plugin)
+            if local_graphs:
+                meta_data["example_graphs"] = local_graphs
             # convert tuples to lists - for basic type dumps in yaml
             for key in meta_data:
                 if isinstance(meta_data[key], tuple):
