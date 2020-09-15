@@ -120,14 +120,15 @@ class MuninPlugin:
     }
     # the list of mappings is ordered
     IMPLEMENTATION_LANGUAGE_REGEXES = {
-        "bash": re.compile(r"\bbash\b"),
-        "ksh": re.compile(r"\bksh\b"),
-        "php": re.compile(r"\bphp"),
-        "python2": re.compile(r"\bpython2?\b"),
-        "python3": re.compile(r"\bpython3\b"),
-        "ruby": re.compile(r"\bruby"),
-        "sh": re.compile(r"\bsh\b"),
-        "zsh": re.compile(r"\bzsh\b"),
+        "bash": re.compile(r"\Wbash(\W|$)"),
+        "ksh": re.compile(r"\Wksh(\W|$)"),
+        "perl": re.compile(r"\Wperl(\W|$)"),
+        "php": re.compile(r"\Wphp"),
+        "python2": re.compile(r"\Wpython2?(\W|$)"),
+        "python3": re.compile(r"\Wpython3"),
+        "ruby": re.compile(r"\Wruby"),
+        "sh": re.compile(r"\Wsh(\W|$)"),
+        "zsh": re.compile(r"\Wzsh(\W|$)"),
     }
     HEADING_REGEX = re.compile(r"^(#+.*)$", flags=re.MULTILINE)
     CAPITALIZATION_UPPER = {"IP", "TCP", "UDP"}
