@@ -525,7 +525,7 @@ class MuninPluginsHugoExport:
         else:
             result["documentation_status"] = ["missing documentation"]
         if plugin.changed_timestamp:
-            result["date"] = plugin.changed_timestamp.isoformat(timespec="seconds") + "+0:00"
+            result["date"] = plugin.changed_timestamp.isoformat(timespec="seconds")
         if plugin.summary:
             result["summary"] = plugin.summary
         if plugin.categories:
