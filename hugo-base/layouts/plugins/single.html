@@ -1,46 +1,5 @@
 {{ define "main" }}
 
-<style>
-  .munin-example-graph {
-    float: right;
-    height: 250px;
-    margin: 1rem;
-    clear: right;
-  }
-
-  .munin-plugin-overview {
-    float: right;
-  }
-
-  .munin-plugin-overview dt::after {
-    content: ":";
-  }
-
-  .munin-plugin-overview dl {
-    display: grid;
-    grid-template-columns: max-content auto;
-  }
-
-  .munin-plugin-overview dt {
-    grid-column-start: 1;
-    padding-right: 5px;
-  }
-
-  .munin-plugin-overview dd {
-    grid-column-start: 2;
-  }
-
-  .munin-plugin-overview dd ul{
-    padding-left: 0;
-    margin-left: 0;
-    margin-bottom: 0;
-  }
-
-  .munin-plugin-overview dd li{
-    list-style-type: none;
-  }
-</style>
-
 <div class="munin-plugin-overview">
   <dl>
     {{ with .Params.repositories }}
