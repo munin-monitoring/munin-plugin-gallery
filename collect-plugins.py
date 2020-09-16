@@ -443,6 +443,10 @@ class MuninPluginRepository:
                 # every executable file is assumed to be a plugin
                 if status.st_mode & 0o100 > 0:
                     yield MuninPlugin(full_path, self)
+                elif filename.endswith(".in"):
+                    # the plugin files in the stable-2.0 repository are not executable
+                    yield MuninPlugin(
+                        full_path, repository_source=self, name=filename[:-3])
                 elif filename.endswith(".c"):
                     yield MuninPlugin(
                         full_path, repository_source=self, name=filename[:-2], language="c")
