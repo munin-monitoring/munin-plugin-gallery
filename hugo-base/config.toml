@@ -1,4 +1,3 @@
-baseURL = "http://gallery.munin-monitoring.org/"
 languageCode = "en-US"
 title = "Munin Plugin Gallery"
 theme = "ace-documentation"

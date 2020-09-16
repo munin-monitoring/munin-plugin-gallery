@@ -29,32 +29,6 @@ class RepositorySourceType(enum.Enum):
     ARCHIVE = "archive"
 
 
-PluginSourceDescription = collections.namedtuple(
-    "PluginSourceDescription", ("name", "source_type", "source_url", "branch", "path"))
-
-
-PLUGIN_SOURCES = (
-    PluginSourceDescription(
-        "munin",
-        RepositorySourceType.GIT,
-        "https://github.com/munin-monitoring/munin.git",
-        "master",
-        "plugins"),
-    PluginSourceDescription(
-        "munin-2.0",
-        RepositorySourceType.GIT,
-        "https://github.com/munin-monitoring/munin.git",
-        "stable-2.0",
-        "plugins"),
-    PluginSourceDescription(
-        "munin-contrib",
-        RepositorySourceType.GIT,
-        "https://github.com/munin-monitoring/contrib.git",
-        "master",
-        "plugins"),
-)
-
-
 class MuninPluginExampleGraph(collections.namedtuple("MuninPluginExampleGraph", "key filename")):
 
     def _get_sort_key(self):
@@ -80,6 +54,10 @@ class MuninPluginExampleGraph(collections.namedtuple("MuninPluginExampleGraph", 
 
 class MuninPluginRepositoryProcessingError(IOError):
     """ any kind of error happened while processing a plugin source"""
+
+
+class ConfigurationImportError(ValueError):
+    """ any kind of data validation problem encountered while processing the configuration file """
 
 
 class MuninPlugin:
@@ -309,14 +287,14 @@ class MuninPlugin:
             return "Plugin '{:s}'".format(self.name)
 
 
-class MuninPluginRepository:
+class MuninPluginSource:
 
-    def __init__(self, source):
-        self.name = source.name
-        self._source_type = source.source_type
-        self._source_url = source.source_url
-        self._branch = source.branch
-        self._filter_path = source.path
+    def __init__(self, name, source_type, location, git_branch=None, source_path=None):
+        self.name = name
+        self._source_type = source_type
+        self._source_location = location
+        self._branch = git_branch
+        self._filter_path = source_path or os.path.curdir
         self._is_downloaded = False
 
     async def initialize(self):
@@ -324,11 +302,11 @@ class MuninPluginRepository:
             self._extract_directory = tempfile.mkdtemp(prefix="munin-gallery-")
             if self._source_type == RepositorySourceType.GIT:
                 self._plugins_directory = await self._import_git_repository(
-                    self._extract_directory, self._source_url, self._branch,
+                    self._extract_directory, self._source_location, self._branch,
                     path=self._filter_path)
             elif self._source_type == RepositorySourceType.ARCHIVE:
                 self._plugins_directory = await self._import_archive(
-                    self._extract_directory, self._source_url, path=self._filter_path)
+                    self._extract_directory, self._source_location, path=self._filter_path)
             else:
                 raise ValueError("Invalid source type: {}".format(self._source_type))
             self._is_downloaded = True
@@ -500,14 +478,16 @@ class MuninPluginsHugoExport:
 
     MISSING_DOCUMENTATION_TEXT = "Sadly there is no documentation for this plugin"
 
-    def __init__(self, hugo_directory):
+    def __init__(self, hugo_directory, baseurl="http://localhost/", hugo_environment="production"):
         self._hugo_directory = hugo_directory
+        self._baseurl = baseurl
+        self._hugo_environment = hugo_environment
         self._content_directory = os.path.join(self._hugo_directory, "content")
         self._plugins_directory = os.path.join(self._content_directory, "plugins")
         self._plugins = []
 
     async def _run_hugo(self, action=None, hide_output=True):
-        call_args = ["hugo"]
+        call_args = ["hugo", "--baseURL", self._baseurl, "--environment", self._hugo_environment]
         if action:
             call_args.append(action)
         call_kwargs = {}
@@ -700,9 +680,8 @@ async def worker_export_plugins_to_hugo(exporter, input_queue):
         input_queue.task_done()
 
 
-async def import_plugins(initialized_plugins):
+async def import_plugins(plugin_sources, initialized_plugins):
     pending_plugins = asyncio.Queue()
-    plugin_sources = [MuninPluginRepository(source) for source in PLUGIN_SOURCES]
     plugin_source_workers = []
     for source in plugin_sources:
         task = asyncio.create_task(import_plugin_source_archive(source, pending_plugins))
@@ -756,12 +735,12 @@ async def import_local_plugins(plugin_filenames):
         print(plugin.get_details())
 
 
-async def publish_plugins_hugo(source, destination, skip_collect=False, skip_website=False,
-                               show_statistics=False):
-    export = MuninPluginsHugoExport(destination)
+async def publish_plugins_hugo(plugin_sources, template_directory, destination, website_settings,
+                               skip_collect=False, skip_website=False, show_statistics=False):
+    export = MuninPluginsHugoExport(destination, **website_settings)
     timing_statistics = []
     if not skip_website:
-        if not await synchronize_directories(source, destination,
+        if not await synchronize_directories(template_directory, destination,
                                              [os.path.join("themes", "*", ".git") + os.path.sep],
                                              do_delete=not skip_collect):
             logging.error("Failed to initialize hugo export directory: {}".format(destination))
@@ -770,7 +749,7 @@ async def publish_plugins_hugo(source, destination, skip_collect=False, skip_web
         start_time = time.monotonic()
         loaded_plugins = asyncio.Queue()
         worker = asyncio.create_task(worker_export_plugins_to_hugo(export, loaded_plugins))
-        await import_plugins(loaded_plugins)
+        await import_plugins(plugin_sources, loaded_plugins)
         worker.cancel()
         timing_statistics.append(("Collect Plugins", time.monotonic() - start_time))
     if not skip_website:
@@ -806,17 +785,73 @@ def get_arguments():
                         help="Skip the website build process")
     parser.add_argument("--show-statistics", action="store_true",
                         help="Output various statistics after the build process")
+    parser.add_argument("--config", default="config.yml",
+                        help="Location of the configuration file")
     parser.add_argument("action", choices=tuple(item.value for item in CommandLineAction),
                         default=CommandLineAction.BUILD.value, help="Action to executed")
     return parser.parse_args()
 
 
+def load_configuration_file(filename):
+    try:
+        with open(filename, "r") as stream:
+            content = stream.read()
+    except IOError as exc:
+        raise ConfigurationImportError(
+            "Failed to read configuration file: {}".format(exc))
+    # use only the first "document" in the yaml stream
+    data = yaml.safe_load(content)[0]
+    # verify existence of required keys
+    for key in ("sources", ):
+        if not key in data:
+            raise RepositorySourceType(
+                "Missing required key 'sources' in configuration file: {}".format(filename))
+            return None
+    return data
+
+
+def _parse_sources_from_configuration(source_configurations):
+    plugin_sources = []
+    for index, source_settings in enumerate(source_configurations):
+        for required_key in ("name", "type", "location"):
+            if not required_key in source_settings:
+                raise ConfigurationImportError(
+                    "Missing key '{}' in source #{:d}".format(required_key, index))
+        # translate some input setting names (only for undesired variable names)
+        source_type = source_settings.pop("type")
+        try:
+            source_settings["source_type"] = RepositorySourceType(source_type)
+        except KeyError:
+            raise ConfigurationImportError(
+                "invalid source 'type' specified for source #{:d}: {} (allowed types: {})"
+                .format(index, source_type,
+                        " / ".join(item.value for item in RepositorySourceType)))
+        plugin_sources.append(MuninPluginSource(**source_settings))
+    return plugin_sources
+
+
+def _parse_website_settings_from_configuration(website_config):
+    result = {}
+    result["baseurl"] = website_config.get("baseurl", "http://localhost/").rstrip("/") + "/"
+    result["hugo_environment"] = website_config.get("hugo_environment", "production")
+    return result
+
+
 def main():
     args = get_arguments()
     wanted_action = CommandLineAction(args.action)
+    try:
+        configuration = load_configuration_file(args.config)
+        plugin_sources = _parse_sources_from_configuration(configuration.get("sources", []))
+        website_settings = _parse_website_settings_from_configuration(
+            configuration.get("website", {}))
+    except ConfigurationImportError as exc:
+        logging.error("Failed to import configuration file ({}): {}".format(args.config, exc))
+        sys.exit(2)
     if wanted_action in {CommandLineAction.BUILD, CommandLineAction.SERVE}:
         hugo_export = asyncio.run(publish_plugins_hugo(
-            args.template_directory, args.target_directory, skip_collect=args.skip_collect,
+            plugin_sources, args.template_directory, args.target_directory,
+            website_settings=website_settings, skip_collect=args.skip_collect,
             skip_website=args.skip_website, show_statistics=args.show_statistics))
         if not hugo_export:
             sys.exit(1)

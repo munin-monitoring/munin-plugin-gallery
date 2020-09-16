@@ -1,0 +1,19 @@
+- sources:
+  - name: munin
+    type: git
+    location: https://github.com/munin-monitoring/munin.git
+    git_branch: master
+    source_path: plugins
+  - name: munin-2.0
+    type: git
+    location: https://github.com/munin-monitoring/munin.git
+    git_branch: stable-2.0
+    source_path: plugins
+  - name: munin-contrib
+    type: git
+    location: https://github.com/munin-monitoring/contrib.git
+    git_branch: master
+    source_path: plugins
+- website:
+  - baseurl: https://gallery.munin-monitoring.org/
+  - hugo_environment: production
