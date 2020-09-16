@@ -1,4 +1,4 @@
-- sources:
+sources:
   - name: munin
     type: git
     location: https://github.com/munin-monitoring/munin.git
@@ -14,6 +14,6 @@
     location: https://github.com/munin-monitoring/contrib.git
     git_branch: master
     source_path: plugins
-- website:
-  - baseurl: https://gallery.munin-monitoring.org/
-  - hugo_environment: production
+website:
+  baseurl: https://gallery.munin-monitoring.org/
+  hugo_environment: production

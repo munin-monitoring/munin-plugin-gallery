@@ -806,8 +806,7 @@ def load_configuration_file(filename):
     except IOError as exc:
         raise ConfigurationImportError(
             "Failed to read configuration file: {}".format(exc))
-    # use only the first "document" in the yaml stream
-    data = yaml.safe_load(content)[0]
+    data = yaml.safe_load(content)
     # verify existence of required keys
     for key in ("sources", ):
         if not key in data:
