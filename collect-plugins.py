@@ -27,6 +27,7 @@ EXAMPLE_GRAPH_DIRECTORY_NAME = "example-graphs"
 class RepositorySourceType(enum.Enum):
     GIT = "git"
     ARCHIVE = "archive"
+    DIRECTORY = "directory"
 
 
 class MuninPluginExampleGraph(collections.namedtuple("MuninPluginExampleGraph", "key filename")):
@@ -307,6 +308,8 @@ class MuninPluginSource:
             elif self._source_type == RepositorySourceType.ARCHIVE:
                 self._plugins_directory = await self._import_archive(
                     self._extract_directory, self._source_location, path=self._filter_path)
+            elif self._source_type == RepositorySourceType.DIRECTORY:
+                self._plugins_directory = self._source_location
             else:
                 raise ValueError("Invalid source type: {}".format(self._source_type))
             self._is_downloaded = True
@@ -348,6 +351,9 @@ class MuninPluginSource:
         elif self._source_type == RepositorySourceType.ARCHIVE:
             # github's tar archive does not support proper file timestamps
             return None
+        elif self._source_type == RepositorySourceType.DIRECTORY:
+            stat = os.stat(filename, follow_symlinks=True)
+            return datetime.datetime.fromtimestamp(stat.st_ctime)
         else:
             raise ValueError("Invalid source type: {}".format(self._source_type))
 
