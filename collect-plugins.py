@@ -375,8 +375,9 @@ class MuninPluginRepository:
         if path.rstrip(os.path.sep) == os.path.curdir:
             path = None
         try:
+            # we cannot use "--depth=1", since we are interested in the file timestamps
             process = await asyncio.subprocess.create_subprocess_exec(
-                *("git", "clone", "--depth=1", "--single-branch", "--branch", branch,
+                *("git", "clone", "--single-branch", "--branch", branch,
                   repository_url, target_directory),
                 stderr=asyncio.subprocess.PIPE)
         except OSError as exc:
