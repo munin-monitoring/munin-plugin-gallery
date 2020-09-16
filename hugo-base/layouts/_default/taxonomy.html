@@ -13,7 +13,7 @@
     <section class="ph4">
       The following plugins belong to the {{ .Section | singularize }} <i>{{ .Title }}</i>.
       <ul>
-        {{ range .Data.Pages }}
+        {{ range .Data.Pages.ByTitle }}
           <li>
             <a href="{{ .Permalink}}">{{ .Title }}</a> {{ with .Params.summary }} - {{ . }}{{ end }}
           </li>
