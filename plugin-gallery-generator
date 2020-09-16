@@ -794,7 +794,8 @@ def get_arguments():
     parser.add_argument("--config", default="config.yml",
                         help="Location of the configuration file")
     parser.add_argument("action", choices=tuple(item.value for item in CommandLineAction),
-                        default=CommandLineAction.BUILD.value, help="Action to executed")
+                        default=CommandLineAction.BUILD.value, nargs="?",
+                        help="Action to executed")
     return parser.parse_args()
 
 
