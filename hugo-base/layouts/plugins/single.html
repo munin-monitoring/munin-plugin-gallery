@@ -51,7 +51,7 @@
     {{ end }}
     {{ with .Params.implementation_languages }}
       {{- $page := $.Site.GetPage (printf "/implementation_languages/%s" (index . 0)) -}}
-      <dt>Programming Language</dt>
+      <dt>Language</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
   </dl>
