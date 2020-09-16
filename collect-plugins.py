@@ -32,7 +32,7 @@ PluginSourceDescription = collections.namedtuple(
 
 PLUGIN_SOURCES = (
     PluginSourceDescription(
-        "munin-master",
+        "munin",
         RepositorySourceType.GIT,
         "https://github.com/munin-monitoring/munin.git",
         "master",
