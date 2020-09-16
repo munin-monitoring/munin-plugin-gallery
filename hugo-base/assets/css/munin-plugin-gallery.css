@@ -16,11 +16,14 @@
 .munin-plugin-overview dl {
   display: grid;
   grid-template-columns: max-content auto;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+  padding: 1rem;
 }
 
 .munin-plugin-overview dt {
   grid-column-start: 1;
   padding-right: 5px;
+  text-align: right;
 }
 
 .munin-plugin-overview dd {
