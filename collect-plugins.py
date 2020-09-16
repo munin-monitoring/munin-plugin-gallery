@@ -554,7 +554,11 @@ class MuninPluginsHugoExport:
             os.utime(path, tuple(2 * [int(plugin.changed_timestamp.timestamp())]))
 
     async def add(self, plugin):
-        plugin_directory = os.path.join(self._plugins_directory, plugin.name)
+        if plugin.repository_source:
+            plugin_directory = os.path.join(
+                self._plugins_directory, plugin.repository_source.name, plugin.name)
+        else:
+            plugin_directory = os.path.join(self._plugins_directory, plugin.name)
         try:
             os.makedirs(plugin_directory, exist_ok=True)
         except OSError as exc:
