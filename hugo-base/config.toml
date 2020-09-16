@@ -52,11 +52,6 @@ enableRobotsTXT = true
   weight = 40
 
 [[menu.shortcuts]]
-  name = "Statistics"
-  url = "/statistics/"
-  weight = 60
-
-[[menu.shortcuts]]
   name = "Sources"
   url = "/repositories/"
   weight = 80
