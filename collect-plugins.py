@@ -165,8 +165,8 @@ class MuninPlugin:
 
     async def initialize(self):
         if not self._is_initialized:
-            with open(self.plugin_filename, "r") as raw:
-                self.plugin_code = raw.read()
+            with open(self.plugin_filename, "rb") as raw:
+                self.plugin_code = raw.read().decode(errors="ignore")
             self.documentation = await self._parse_documentation()
             self.family = self._parse_family()
             self.capabilities = self._parse_capabilities()
