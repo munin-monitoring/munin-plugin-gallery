@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import asyncio.subprocess
 import collections
+import contextlib
 import datetime
 import enum
 import multiprocessing
@@ -505,11 +506,17 @@ class MuninPluginsHugoExport:
         self._plugins_directory = os.path.join(self._content_directory, "plugins")
         self._plugins = []
 
-    async def build(self):
+    async def _run_hugo(self, action=None, hide_output=True):
+        call_args = ["hugo"]
+        if action:
+            call_args.append(action)
+        call_kwargs = {}
+        if hide_output:
+            call_kwargs["stdout"] = asyncio.subprocess.PIPE
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                "hugo", cwd=self._hugo_directory,
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                *call_args, **call_kwargs,
+                cwd=self._hugo_directory, stderr=asyncio.subprocess.PIPE)
         except OSError as exc:
             logging.error("Failed to run 'hugo': {}".format(exc))
             return False
@@ -520,6 +527,12 @@ class MuninPluginsHugoExport:
             logging.error(
                 "Failed to build hugo site: {}".format((await process.stderr.read()).decode()))
             return False
+
+    async def build(self):
+        return await self._run_hugo()
+
+    async def serve(self):
+        return await self._run_hugo("serve", hide_output=False)
 
     def get_hugo_frontmatter(self, plugin):
         result = {
@@ -776,6 +789,7 @@ async def publish_plugins_hugo(source, destination, skip_collect=False, skip_web
 
 class CommandLineAction(enum.Enum):
     BUILD = "build"
+    SERVE = "serve"
 
 
 def get_arguments():
@@ -800,7 +814,7 @@ def get_arguments():
 def main():
     args = get_arguments()
     wanted_action = CommandLineAction(args.action)
-    if wanted_action == CommandLineAction.BUILD:
+    if wanted_action in {CommandLineAction.BUILD, CommandLineAction.SERVE}:
         hugo_export = asyncio.run(publish_plugins_hugo(
             args.template_directory, args.target_directory, skip_collect=args.skip_collect,
             skip_website=args.skip_website, show_statistics=args.show_statistics))
