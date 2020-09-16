@@ -15,6 +15,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import yaml
 
 
@@ -547,6 +548,11 @@ class MuninPluginsHugoExport:
             result["indexing_content"] = ContentIndexer.get_indexing_content(plugin.documentation)
         return result
 
+    @staticmethod
+    def _set_timestamp_of_plugin(path, plugin):
+        if plugin.changed_timestamp:
+            os.utime(path, tuple(2 * [int(plugin.changed_timestamp.timestamp())]))
+
     async def add(self, plugin):
         plugin_directory = os.path.join(self._plugins_directory, plugin.name)
         try:
@@ -558,16 +564,19 @@ class MuninPluginsHugoExport:
         documentation = plugin.documentation or self.MISSING_DOCUMENTATION_TEXT
         source_path = os.path.join(plugin_directory, "source")
         shutil.copy(plugin.plugin_filename, source_path)
+        self._set_timestamp_of_plugin(source_path, plugin)
         local_graphs = []
         for graph in plugin.example_graphs:
             destination = os.path.join(
                 plugin_directory, graph.key + os.path.splitext(graph.filename)[1])
             shutil.copy(graph.filename, destination)
+            self._set_timestamp_of_plugin(destination, plugin)
             local_graphs.append({
                 "key": graph.key,
                 "path": os.path.basename(destination),
             })
-        with open(os.path.join(plugin_directory, "index.md"), "w") as plugin_file:
+        export_filename = os.path.join(plugin_directory, "index.md")
+        with open(export_filename, "w") as plugin_file:
             plugin_file.write("---" + os.linesep)
             meta_data = self.get_hugo_frontmatter(plugin)
             if local_graphs:
@@ -588,6 +597,8 @@ class MuninPluginsHugoExport:
                 "language": plugin.implementation_language or "",
                 "path": pathlib.Path(source_path).relative_to(self._content_directory),
             })
+        self._set_timestamp_of_plugin(export_filename, plugin)
+        self._set_timestamp_of_plugin(plugin_directory, plugin)
         self._plugins.append(plugin)
 
     def get_statistics(self):
