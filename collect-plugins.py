@@ -2,6 +2,7 @@
 
 
 import aiohttp
+import argparse
 import asyncio
 import asyncio.subprocess
 import collections
@@ -618,8 +619,10 @@ class MuninPluginsHugoExport:
         }
 
 
-async def synchronize_directories(src, dest, exclude_patterns=None):
-    rsync_arguments = ["rsync", "--archive", "--delete"]
+async def synchronize_directories(src, dest, exclude_patterns=None, do_delete=True):
+    rsync_arguments = ["rsync", "--archive"]
+    if do_delete:
+        rsync_arguments.append("--delete")
     for exclude_pattern in (exclude_patterns or []):
         rsync_arguments.extend(["--exclude", exclude_pattern])
     rsync_arguments.append(src.rstrip(os.path.sep) + os.path.sep)
@@ -740,38 +743,74 @@ async def import_local_plugins(plugin_filenames):
         print(plugin.get_details())
 
 
-async def publish_plugins_hugo(source, destination):
-    if not await synchronize_directories(source, destination,
-                                         [os.path.join("themes", "*", ".git") + os.path.sep]):
-        logging.error("Failed to initialize hugo export directory: {}".format(destination))
-        return False
+async def publish_plugins_hugo(source, destination, skip_collect=False, skip_website=False,
+                               show_statistics=False):
     export = MuninPluginsHugoExport(destination)
-    loaded_plugins = asyncio.Queue()
-    worker = asyncio.create_task(worker_export_plugins_to_hugo(export, loaded_plugins))
-    await import_plugins(loaded_plugins)
-    worker.cancel()
-    if not await export.build():
-        logging.error("Failed to build the static export")
-        return False
-    for key, value in export.get_statistics().items():
-        print("{}: {}".format(key, value))
+    timing_statistics = []
+    if not skip_website:
+        if not await synchronize_directories(source, destination,
+                                             [os.path.join("themes", "*", ".git") + os.path.sep],
+                                             do_delete=not skip_collect):
+            logging.error("Failed to initialize hugo export directory: {}".format(destination))
+            return None
+    if not skip_collect:
+        start_time = time.monotonic()
+        loaded_plugins = asyncio.Queue()
+        worker = asyncio.create_task(worker_export_plugins_to_hugo(export, loaded_plugins))
+        await import_plugins(loaded_plugins)
+        worker.cancel()
+        timing_statistics.append(("Collect Plugins", time.monotonic() - start_time))
+    if not skip_website:
+        start_time = time.monotonic()
+        if not await export.build():
+            logging.error("Failed to build the static export")
+            return None
+        timing_statistics.append(("Build Website", time.monotonic() - start_time))
+    if show_statistics:
+        for key, value in export.get_statistics().items():
+            print("{}: {}".format(key, value))
+        for label, duration in timing_statistics:
+            print("Runtime ({:s}): {:d} seconds".format(label, int(duration)))
+    return export
+
+
+class CommandLineAction(enum.Enum):
+    BUILD = "build"
+
+
+def get_arguments():
+    base_dir = os.path.dirname(__file__)
+    parser = argparse.ArgumentParser(
+        description=("Collect munin plugins from different sources and build a static website for "
+                     "visualizing these plugins."))
+    parser.add_argument("--target-directory", default=os.path.join(base_dir, "build", "hugo"),
+                        help="Target build directory")
+    parser.add_argument("--template-directory", default=os.path.join(base_dir, "hugo-base"),
+                        help="Directory of the website template (hugo)")
+    parser.add_argument("--skip-collect", action="store_true", help="Skip the plugin collection")
+    parser.add_argument("--skip-website", action="store_true",
+                        help="Skip the website build process")
+    parser.add_argument("--show-statistics", action="store_true",
+                        help="Output various statistics after the build process")
+    parser.add_argument("action", choices=tuple(item.value for item in CommandLineAction),
+                        default=CommandLineAction.BUILD.value, help="Action to executed")
+    return parser.parse_args()
 
 
 def main():
-    if True:
-        base_dir = os.path.dirname(__file__)
-        hugo_base_dir = os.path.join(base_dir, "hugo-base")
-        hugo_build_dir = os.path.join(base_dir, "build", "hugo")
-        asyncio.run(publish_plugins_hugo(hugo_base_dir, hugo_build_dir))
-    elif len(sys.argv) > 1:
-        asyncio.run(import_local_plugins(sys.argv[1:]))
-    else:
-        # only import
-        loaded_plugins = asyncio.Queue()
-        asyncio.run(import_plugins(loaded_plugins))
-        plugins = asyncio.run(transfer_queue_to_list(loaded_plugins))
-        for key, matches in get_plugin_statistics(plugins).items():
-            print("{}: {:d}".format(key, len(matches)))
+    args = get_arguments()
+    wanted_action = CommandLineAction(args.action)
+    if wanted_action == CommandLineAction.BUILD:
+        hugo_export = asyncio.run(publish_plugins_hugo(
+            args.template_directory, args.target_directory, skip_collect=args.skip_collect,
+            skip_website=args.skip_website, show_statistics=args.show_statistics))
+        if not hugo_export:
+            sys.exit(1)
+        if wanted_action == CommandLineAction.SERVE:
+            try:
+                asyncio.run(hugo_export.serve())
+            except KeyboardInterrupt:
+                pass
 
 
 if __name__ == "__main__":
