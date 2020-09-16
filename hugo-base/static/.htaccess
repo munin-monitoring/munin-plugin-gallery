@@ -1,0 +1,77 @@
+# Used apache modules (all being optional): brotli expires headers
+#
+# Expected apache2 configuration for directory:
+#
+#    <IfModule mod_brotli.c>
+#    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/x-javascript application/javascript application/json application/x-font-ttf application/vnd.ms-fontobject image/x-icon
+#    </IfModule>
+#
+#    AllowOverride Indexes FileInfo
+#    Require all granted
+
+
+# Compression
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/x-javascript application/javascript application/json application/x-font-ttf image/x-icon
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresDefault                                    "access plus 1 hour"
+
+    # DATA
+    ExpiresByType text/xml                            "access plus 3 hour"
+    ExpiresByType text/html                           "access plus 3 hour"
+    ExpiresByType text/plain                          "access plus 3 hour"
+    ExpiresByType application/xml                     "access plus 3 hour"
+    ExpiresByType application/json                    "access plus 3 hour"
+    ExpiresByType application/rss+xml                 "access plus 3 hour"
+    ExpiresByType application/atom+xml                "access plus 3 hour"
+    ExpiresByType text/x-component                    "access plus 3 hour"
+
+    # MANIFEST
+    ExpiresByType application/x-web-app-manifest+json "access plus 0 seconds"
+    ExpiresByType text/cache-manifest                 "access plus 0 seconds"
+
+    # SCRIPTS
+    ExpiresByType text/css                            "access plus 3 day"
+    ExpiresByType text/javascript                     "access plus 3 day"
+    ExpiresByType application/javascript              "access plus 3 day"
+    ExpiresByType application/x-javascript            "access plus 3 day"
+
+    # IMAGES
+    ExpiresByType image/gif                           "access plus 1 week"
+    ExpiresByType image/png                           "access plus 1 week"
+    ExpiresByType image/jpe                           "access plus 1 week"
+    ExpiresByType image/jpg                           "access plus 1 week"
+    ExpiresByType image/jpeg                          "access plus 1 week"
+    ExpiresByType image/jp2                           "access plus 1 week"
+    ExpiresByType image/pipeg                         "access plus 1 week"
+    ExpiresByType image/bmp                           "access plus 1 week"
+    ExpiresByType image/tiff                          "access plus 1 week"
+    ExpiresByType image/svg+xml                       "access plus 1 week"
+    ExpiresByType image/vnd.microsoft.icon            "access plus 1 week"
+
+    # ICONS
+    ExpiresByType image/ico                           "access plus 1 month"
+    ExpiresByType image/icon                          "access plus 1 month"
+    ExpiresByType text/ico                            "access plus 1 month"
+    ExpiresByType image/x-ico                         "access plus 1 month"
+    ExpiresByType image/x-icon                        "access plus 1 month"
+    ExpiresByType application/ico                     "access plus 1 month"
+
+    # FONTS
+    ExpiresByType font/truetype                       "access plus 1 month"
+    ExpiresByType font/opentype                       "access plus 1 month"
+    ExpiresByType application/x-font-ttf              "access plus 1 month"
+    ExpiresByType application/x-font-woff             "access plus 1 month"
+    ExpiresByType application/font-woff               "access plus 1 month"
+    ExpiresByType application/vnd.ms-fontobject       "access plus 1 month"
+
+    ExpiresByType application/pdf                     "access plus 1 day"
+
+    <IfModule mod_headers.c>
+        Header append Cache-Control "public"
+    </IfModule>
+</IfModule>
