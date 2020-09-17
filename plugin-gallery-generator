@@ -22,6 +22,7 @@ import yaml
 
 
 EXAMPLE_GRAPH_DIRECTORY_NAME = "example-graphs"
+INDEXING_IGNORE_WORDS_FILE = os.path.join(os.path.dirname(__file__), "indexing-ignore-words.txt")
 
 
 class RepositorySourceType(enum.Enum):
@@ -458,8 +459,13 @@ class ContentIndexer:
     # ignore lines with headings and magic markers
     IGNORE_LINE_REGEX = re.compile(r"(^#|^\s+#%#)")
     REMOVAL_REGEXES = (
-        # remove common (very unspecific) words
-        re.compile(r"\b(copyright|munin|plugin)\b", flags=re.IGNORECASE),
+        # Remove common (very unspecific) words.  These words are parsed from a separate file.
+        re.compile(
+            r"\b({})\b".format(
+                "|".join(open(INDEXING_IGNORE_WORDS_FILE, "r").read().splitlines())),
+            flags=re.IGNORECASE),
+        # remove single-letter words/digits and dots
+        re.compile(r"\b(\.+|\w)\b", flags=re.IGNORECASE),
         # remove all special characters
         re.compile(r"[^\w\s.]"),
     )
