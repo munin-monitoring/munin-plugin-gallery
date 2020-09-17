@@ -1,0 +1,13 @@
+dist: focal
+language: minimal
+addons:
+  apt:
+    packages:
+      - codespell
+      - jq
+      - hugo
+      - python3-aiohttp
+      - python3-flake8
+      - python3-yaml
+script:
+  - make lint
