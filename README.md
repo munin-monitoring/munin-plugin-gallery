@@ -16,6 +16,7 @@ is used for the [Munin Plugin Gallery](https://gallery.munin-monitoring.org/).
 
 * git repository
 * archive (e.g. tar.gz)
+* local directory
 
 
 # Hugo export
