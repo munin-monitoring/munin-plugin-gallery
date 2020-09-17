@@ -6,7 +6,6 @@ import argparse
 import asyncio
 import asyncio.subprocess
 import collections
-import contextlib
 import datetime
 import enum
 import multiprocessing
@@ -815,7 +814,7 @@ def load_configuration_file(filename):
     data = yaml.safe_load(content)
     # verify existence of required keys
     for key in ("sources", ):
-        if not key in data:
+        if key not in data:
             raise RepositorySourceType(
                 "Missing required key 'sources' in configuration file: {}".format(filename))
             return None
@@ -826,7 +825,7 @@ def _parse_sources_from_configuration(source_configurations):
     plugin_sources = []
     for index, source_settings in enumerate(source_configurations):
         for required_key in ("name", "type", "location"):
-            if not required_key in source_settings:
+            if required_key not in source_settings:
                 raise ConfigurationImportError(
                     "Missing key '{}' in source #{:d}".format(required_key, index))
         # translate some input setting names (only for undesired variable names)
