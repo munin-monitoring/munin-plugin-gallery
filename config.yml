@@ -4,16 +4,22 @@ sources:
     location: https://github.com/munin-monitoring/munin.git
     git_branch: master
     source_path: plugins
+    ignore_files:
+      - node.d.hp-ux/gp_gbl_mem_util.adv
   - name: munin-2.0
     type: git
     location: https://github.com/munin-monitoring/munin.git
     git_branch: stable-2.0
     source_path: plugins
+    ignore_files:
+      - plugins.history.in
   - name: munin-contrib
     type: git
     location: https://github.com/munin-monitoring/contrib.git
     git_branch: master
     source_path: plugins
+    ignore_files:
+      - asterisk/asterisk_14_fax_ffa/get_fax_stats.pl
 website:
   baseurl: https://gallery.munin-monitoring.org/
   hugo_environment: production
