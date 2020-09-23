@@ -1,12 +1,10 @@
 BUILD_DIR ?= build
-HUGO_BUILD_DIR ?= build/hugo
 HUGO_BASE_DIR ?= hugo-base
-HUGO_PUBLIC_DIR ?= $(HUGO_BUILD_DIR)/public
+HUGO_PUBLIC_DIR ?= $(HUGO_BASE_DIR)/public
 INDEX_JSON ?= $(HUGO_PUBLIC_DIR)/index.json
 GENERATOR_BIN = ./plugin-gallery-generator
 HUGO_BASE_FILES = $(shell find "$(HUGO_BASE_DIR)" -type f)
-STAMP_HUGO_BUILD = $(HUGO_BUILD_DIR)/.stamp-hugo
-STAMP_PLUGIN_GALLERY_GENERATOR = $(HUGO_BUILD_DIR)/.stamp-plugin-gallery-generator
+STAMP_PLUGIN_GALLERY_GENERATOR = $(BUILD_DIR)/.stamp-plugin-gallery-generator
 
 
 .PHONY: help
@@ -19,17 +17,13 @@ help:
 	@echo
 
 .PHONY: build
-build: $(STAMP_HUGO_BUILD)
-
-$(STAMP_HUGO_BUILD): Makefile $(HUGO_BASE_FILES) $(STAMP_PLUGIN_GALLERY_GENERATOR)
-	cd "$(HUGO_BUILD_DIR)" && hugo
-	touch "$@"
+build: $(STAMP_PLUGIN_GALLERY_GENERATOR)
 
 $(STAMP_PLUGIN_GALLERY_GENERATOR): Makefile $(GENERATOR_BIN) config.yml
-	"$(GENERATOR_BIN)"
+	"$(GENERATOR_BIN)" build
 	touch "$@"
 
-$(INDEX_JSON): $(STAMP_HUGO_BUILD)
+$(INDEX_JSON): $(STAMP_PLUGIN_GALLERY_GENERATOR)
 
 .PHONY: show-indexing-words
 show-indexing-words: $(INDEX_JSON)
