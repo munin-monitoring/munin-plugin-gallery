@@ -102,13 +102,14 @@ class MuninPlugin:
     }
     # the list of mappings is ordered
     IMPLEMENTATION_LANGUAGE_REGEXES = {
+        "awk": re.compile(r"\W(g|m)?awk(\W|$)"),
         "bash": re.compile(r"\Wbash(\W|$)"),
         "ksh": re.compile(r"\Wksh(\W|$)"),
         "perl": re.compile(r"\Wperl(\W|$)"),
         "php": re.compile(r"\Wphp"),
         "python2": re.compile(r"\Wpython2?(\W|$)"),
         "python3": re.compile(r"\Wpython3"),
-        "ruby": re.compile(r"\Wruby"),
+        "ruby": re.compile(r"\Wj?ruby"),
         "sh": re.compile(r"\Wsh(\W|$)"),
         "zsh": re.compile(r"\Wzsh(\W|$)"),
     }
