@@ -488,6 +488,9 @@ class ContentIndexer:
 class MuninPluginsHugoExport:
 
     MISSING_DOCUMENTATION_TEXT = "Sadly there is no documentation for this plugin"
+    # String to be used for tagging in case of unknown values.
+    # (e.g. if the programming language could not be determined)
+    UNKNOWN_PLACEHOLDER = "unknown"
 
     def __init__(self, hugo_directory, baseurl="http://localhost/", hugo_environment="production"):
         self._hugo_directory = hugo_directory
@@ -547,8 +550,8 @@ class MuninPluginsHugoExport:
             result["capabilities"] = tuple(plugin.capabilities)
         if plugin.path_keywords:
             result["keywords"] = tuple(sorted(plugin.path_keywords))
-        if plugin.implementation_language:
-            result["implementation_languages"] = [plugin.implementation_language]
+        result["implementation_languages"] = [
+            plugin.implementation_language or self.UNKNOWN_PLACEHOLDER]
         if plugin.documentation:
             result["indexing_content"] = ContentIndexer.get_indexing_content(plugin.documentation)
         return result
