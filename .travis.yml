@@ -10,4 +10,5 @@ addons:
       - python3-flake8
       - python3-yaml
 script:
+  - make build
   - make lint
