@@ -67,3 +67,16 @@ sources:
 
 Afterwards you can inspect the content of `build/plugins/` and verify the resulting
 data export.
+
+
+# Dependencies
+
+The file `munin-plugin-gallery-dependencies.equivs` can be used for generating a dummy
+dependency deb package.  This simplifies the explicit documentation of all required
+packages necessary for running the munin plugin generator.
+
+Generate the dependency package:
+
+```sh
+equivs-build munin-plugin-gallery-dependencies.equivs
+```

@@ -1,0 +1,18 @@
+# input file for "equivs-build" (generating a simple dependency deb package)
+Section: misc
+Priority: optional
+Homepage: https://gallery.munin-monitoring.org/
+Standards-Version: 3.9.2
+
+Package: munin-plugin-gallery-dependencies
+Version: 1.0
+Maintainer: Lars Kruse <devel@sumpfralle.de>
+Depends:
+ hugo (>=0.68),
+ python3-aiohttp,
+ python3-yaml,
+Architecture: any
+Description: Dependency package for munin-plugin-gallery
+ Th munin plugin gallery generator retrieves munin plugins from
+ configured sources and generates a static website visualizing
+ these plugins.
