@@ -65,5 +65,5 @@ sources:
     location: your-local-example-directory
 ```
 
-Afterwards you can inspect the content of `build/hugo/content/plugins/` and verify the resulting
+Afterwards you can inspect the content of `build/plugins/` and verify the resulting
 data export.

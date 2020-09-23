@@ -55,3 +55,9 @@ enableRobotsTXT = true
   name = "Sources"
   url = "/repositories/"
   weight = 80
+
+
+[module]
+  [[module.mounts]]
+    source = "../build/plugins"
+    target = "content/plugins"

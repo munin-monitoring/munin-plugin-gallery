@@ -491,13 +491,15 @@ class MuninPluginsHugoExport:
     # String to be used for tagging in case of unknown values.
     # (e.g. if the programming language could not be determined)
     UNKNOWN_PLACEHOLDER = "unknown"
+    PLUGINS_SUBDIRECTORY = "plugins"
 
-    def __init__(self, hugo_directory, baseurl="http://localhost/", hugo_environment="production"):
+    def __init__(self, hugo_directory, plugins_directory, baseurl="http://localhost/",
+                 hugo_environment="production"):
         self._hugo_directory = hugo_directory
         self._baseurl = baseurl
         self._hugo_environment = hugo_environment
         self._content_directory = os.path.join(self._hugo_directory, "content")
-        self._plugins_directory = os.path.join(self._content_directory, "plugins")
+        self._plugins_directory = plugins_directory
         self._plugins = []
 
     async def _run_hugo(self, action=None, hide_output=True):
@@ -607,7 +609,9 @@ class MuninPluginsHugoExport:
 """
             plugin_file.write(show_source_format_string % {
                 "language": plugin.implementation_language or "",
-                "path": pathlib.Path(source_path).relative_to(self._content_directory),
+                "path": os.path.join(
+                    self.PLUGINS_SUBDIRECTORY,
+                    *pathlib.Path(source_path).relative_to(self._plugins_directory).parts),
             })
         self._set_timestamp_of_plugin(export_filename, plugin)
         self._set_timestamp_of_plugin(plugin_directory, plugin)
@@ -624,35 +628,6 @@ class MuninPluginsHugoExport:
             "unexpected_categories": len([p for p in self._plugins
                                           if p.get_unexpected_categories()]),
         }
-
-
-async def synchronize_directories(src, dest, exclude_patterns=None, do_delete=True):
-    rsync_arguments = ["rsync", "--archive"]
-    if do_delete:
-        rsync_arguments.append("--delete")
-    for exclude_pattern in (exclude_patterns or []):
-        rsync_arguments.extend(["--exclude", exclude_pattern])
-    rsync_arguments.append(src.rstrip(os.path.sep) + os.path.sep)
-    rsync_arguments.append(dest.rstrip(os.path.sep) + os.path.sep)
-    try:
-        os.makedirs(dest, exist_ok=True)
-    except OSError as exc:
-        logging.error(
-            "Failed to create synchronization destination ({}): {}".format(dest, exc))
-        return False
-    try:
-        process = await asyncio.subprocess.create_subprocess_exec(
-            *rsync_arguments, stderr=asyncio.subprocess.PIPE)
-    except OSError as exc:
-        logging.error("Failed to execute rsync: {}".format(exc))
-        return False
-    _, error_output = await process.communicate()
-    if process.returncode == 0:
-        return True
-    else:
-        logging.error("Failed to copy directory from '{}' to '{}': {}"
-                      .format(src, dest, " ".join(error_output.decode().splitlines())))
-        return False
 
 
 async def import_plugin_source_archive(plugin_source, plugin_queue):
@@ -749,18 +724,15 @@ async def import_local_plugins(plugin_filenames):
         print(plugin.get_details())
 
 
-async def publish_plugins_hugo(plugin_sources, template_directory, destination, website_settings,
-                               skip_collect=False, skip_website=False, show_statistics=False):
-    export = MuninPluginsHugoExport(destination, **website_settings)
+async def publish_plugins_hugo(
+        plugin_sources, hugo_directory, plugin_directory, website_settings,
+        skip_collect=False, skip_website=False, show_statistics=False):
+    export = MuninPluginsHugoExport(hugo_directory, plugin_directory, **website_settings)
     timing_statistics = []
-    if not skip_website:
-        if not await synchronize_directories(template_directory, destination,
-                                             [os.path.join("themes", "*", ".git") + os.path.sep],
-                                             do_delete=not skip_collect):
-            logging.error("Failed to initialize hugo export directory: {}".format(destination))
-            return None
     if not skip_collect:
         start_time = time.monotonic()
+        if os.path.exists(plugin_directory):
+            shutil.rmtree(plugin_directory)
         loaded_plugins = asyncio.Queue()
         worker = asyncio.create_task(worker_export_plugins_to_hugo(export, loaded_plugins))
         await import_plugins(plugin_sources, loaded_plugins)
@@ -790,8 +762,9 @@ def get_arguments():
     parser = argparse.ArgumentParser(
         description=("Collect munin plugins from different sources and build a static website for "
                      "visualizing these plugins."))
-    parser.add_argument("--target-directory", default=os.path.join(base_dir, "build", "hugo"),
-                        help="Target build directory")
+    parser.add_argument("--target-plugin-directory",
+                        default=os.path.join(base_dir, "build", "plugins"),
+                        help="Target directory for plugin collection")
     parser.add_argument("--template-directory", default=os.path.join(base_dir, "hugo-base"),
                         help="Directory of the website template (hugo)")
     parser.add_argument("--export-url", default=None,
@@ -874,7 +847,7 @@ def main():
         sys.exit(2)
     if wanted_action in {CommandLineAction.BUILD, CommandLineAction.SERVE}:
         hugo_export = asyncio.run(publish_plugins_hugo(
-            plugin_sources, args.template_directory, args.target_directory,
+            plugin_sources, args.template_directory, args.target_plugin_directory,
             website_settings=website_settings, skip_collect=args.skip_collect,
             skip_website=args.skip_website, show_statistics=args.show_statistics))
         if not hugo_export:
