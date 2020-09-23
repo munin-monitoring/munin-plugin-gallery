@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 
-import aiohttp
 import argparse
 import asyncio
 import asyncio.subprocess
@@ -17,6 +16,8 @@ import shutil
 import sys
 import tempfile
 import time
+
+import aiohttp
 import yaml
 
 
