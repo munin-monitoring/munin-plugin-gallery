@@ -15,7 +15,7 @@
       <ul>
         {{ range .Data.Pages.ByTitle }}
           <li>
-            <a href="{{ .Permalink}}">{{ .Title }}</a> {{ with .Params.summary }} - {{ . }}{{ end }}
+            <a href="{{ .Permalink}}">{{ .Title }}</a>{{ with .Params.date }} ({{ . | dateFormat "2006-01-02" }}) {{ end }}{{ with .Params.summary }} - {{ . }}{{ end }}
           </li>
         {{ end }}
       </ul>
