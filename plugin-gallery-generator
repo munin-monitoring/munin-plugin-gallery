@@ -791,6 +791,8 @@ def get_arguments():
                         help="Target build directory")
     parser.add_argument("--template-directory", default=os.path.join(base_dir, "hugo-base"),
                         help="Directory of the website template (hugo)")
+    parser.add_argument("--export-url", default=None,
+                        help="Override the base URL given in the configuration file")
     parser.add_argument("--skip-collect", action="store_true", help="Skip the plugin collection")
     parser.add_argument("--skip-website", action="store_true",
                         help="Skip the website build process")
@@ -841,9 +843,12 @@ def _parse_sources_from_configuration(source_configurations):
     return plugin_sources
 
 
-def _parse_website_settings_from_configuration(website_config):
+def _parse_website_settings_from_configuration(website_config, baseurl_override=None):
     result = {}
-    result["baseurl"] = website_config.get("baseurl", "http://localhost/").rstrip("/") + "/"
+    if baseurl_override is None:
+        result["baseurl"] = website_config.get("baseurl", "http://localhost/").rstrip("/") + "/"
+    else:
+        result["baseurl"] = baseurl_override
     result["hugo_environment"] = website_config.get("hugo_environment", "production")
     return result
 
@@ -851,11 +856,16 @@ def _parse_website_settings_from_configuration(website_config):
 def main():
     args = get_arguments()
     wanted_action = CommandLineAction(args.action)
+    if (wanted_action == CommandLineAction.SERVE) and (args.export_url is None):
+        # the local "serve" feature of hugo implies a local base URL
+        baseurl_override = "http://localhost:1313/"
+    else:
+        baseurl_override = args.export_url
     try:
         configuration = load_configuration_file(args.config)
         plugin_sources = _parse_sources_from_configuration(configuration.get("sources", []))
         website_settings = _parse_website_settings_from_configuration(
-            configuration.get("website", {}))
+            configuration.get("website", {}), baseurl_override=baseurl_override)
     except ConfigurationImportError as exc:
         logging.error("Failed to import configuration file ({}): {}".format(args.config, exc))
         sys.exit(2)
