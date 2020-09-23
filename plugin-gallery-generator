@@ -115,6 +115,13 @@ class MuninPlugin:
     HEADING_REGEX = re.compile(r"^(#+.*)$", flags=re.MULTILINE)
     CAPITALIZATION_UPPER = {"IP", "TCP", "UDP"}
     CAPITALIZATION_LOWER = {"a", "the", "in", "for", "to", "and"}
+    PREPROCESSING_SHEBANG_SUBSTITUTIONS = (
+        (re.compile(r"^#!@@BASH@@"), "#!/bin/bash"),
+        (re.compile(r"^#!@@GOODSH@@"), "#!/bin/sh"),
+        (re.compile(r"^#!@@PERL@@"), "#!/usr/bin/perl"),
+        (re.compile(r"^#!@@PYTHON@@"), "#!/usr/bin/env python3"),
+        (re.compile(r"^#!@@RUBY@@"), "#!/usr/bin/ruby"),
+    )
 
     def __init__(self, plugin_filename, repository_source=None, name=None, language=None):
         self.plugin_filename = plugin_filename
@@ -148,7 +155,8 @@ class MuninPlugin:
     async def initialize(self):
         if not self._is_initialized:
             with open(self.plugin_filename, "rb") as raw:
-                self.plugin_code = raw.read().decode(errors="ignore")
+                raw_content = raw.read().decode(errors="ignore")
+            self.plugin_code = self._preprocess_raw_code(raw_content)
             self.documentation = await self._parse_documentation()
             self.family = self._parse_family()
             self.capabilities = self._parse_capabilities()
@@ -163,6 +171,15 @@ class MuninPlugin:
             if self.implementation_language is None:
                 self.implementation_language = self._parse_implementation_language()
             self._is_initialized = True
+
+    @classmethod
+    def _preprocess_raw_code(cls, raw_code):
+        """ replace specific patterns (e.g. the pre-substituted shebangs for munin-2.0 plugins)
+        """
+        result = raw_code
+        for pattern, replacement in cls.PREPROCESSING_SHEBANG_SUBSTITUTIONS:
+            result = pattern.sub(replacement, result)
+        return result
 
     def _get_keywords(self):
         if self.repository_source:
