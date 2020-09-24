@@ -1,3 +1,4 @@
 build/
+hugo-base/resources/
 hugo-base/public/
 __pycache__/
