@@ -7,12 +7,12 @@
         {{ .Content }}
       </div>
     {{ else }}
-      <h1>{{ .Section | title | singularize }}: {{ .Title }}</h1>
+      <h1>{{ .Section | humanize | title | singularize }}: {{ .Title }}</h1>
     {{ end }}
   </article>
   <div class="mw8 center">
     <section class="ph4">
-      The following plugins belong to the {{ .Section | singularize }} <i>{{ .Title }}</i>.
+      The following plugins belong to the {{ .Section | humanize | singularize }} <i>{{ .Title }}</i>.
       <ul>
         {{ range .Data.Pages.ByTitle }}
           <li>
