@@ -1,0 +1,25 @@
+on:
+  push: null
+  schedule:
+    - cron: "12 3 * * *"
+
+jobs:
+  build-und-verify:
+    name: Build and Verify
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: True
+      - name: Install dependencies
+        run: sudo apt-get install --yes --quiet codespell git hugo jq make python3-aiohttp python3-flake8 python3-yaml
+      - name: Build website
+        run: make build
+      - name: Analyze the code and spelling
+        run: make lint
+      - name: Upload static website
+        uses: actions/upload-artifact@v2
+        with:
+          name: website
+          path: hugo-base/public
