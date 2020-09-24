@@ -20,6 +20,9 @@ enableRobotsTXT = true
     endLevel = 3
     ordered = true
 
+[minify]
+  minifyOutput = true
+
 [params]
   site_logo = "/logo.svg"
   description = "Collection of all plugins maintained by the Munin developers"
