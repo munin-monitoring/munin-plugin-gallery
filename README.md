@@ -46,6 +46,17 @@ After the first run you may want to omit the plugin collection in order to speed
 ```
 
 
+## Additional munin plugin sources (repositories)
+
+1. Add an entry o `config.yml`
+2. *optional*: specify a human-readable name for the repository in `hugo-base/content/repositories`
+3. Test the collection process: `./plugin-gallery-generator --skip-website build`
+4. commit the changes and propose a [pull request](https://github.com/munin-monitoring/munin-plugin-gallery/pulls)
+
+In case of problems, you may want to speedup debugging by temporarily removing all other sources
+from the list specified in `config.yml`.
+
+
 ## Plugin parser
 
 Adjust the python-based [plugin-gallery-generator](blob/master/plugin-gallery-generator) and
