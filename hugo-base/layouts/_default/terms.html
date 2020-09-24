@@ -15,7 +15,7 @@
       <h1>{{ .Data.Plural | humanize }}</h1>
       <ul>
         {{ range $key, $value := .Data.Terms }}
-          {{- $term_page := $.Site.GetPage (printf "/%s/%s" $taxonomy_name $key) -}}
+          {{- $term_page := $.Site.GetPage (printf "/%s/%s/" $taxonomy_name $key) -}}
           <li>
             <a href="{{ $term_page.RelPermalink }}" class="link blue hover-black">{{ $term_page.Title }}</a> ({{ $value.Count }})
           </li>

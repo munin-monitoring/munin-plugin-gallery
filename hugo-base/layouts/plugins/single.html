@@ -3,7 +3,7 @@
 <div class="munin-plugin-overview">
   <dl>
     {{ with .Params.repositories }}
-      {{- $page := $.Site.GetPage (printf "/repositories/%s" (index . 0)) -}}
+      {{- $page := $.Site.GetPage (printf "/repositories/%s/" (index . 0)) -}}
       <dt>Repository</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
@@ -16,14 +16,14 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := $.Site.GetPage (printf "/categories/%s" .) -}}
+            {{- $page := $.Site.GetPage (printf "/categories/%s/" .) -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
       </dd>
     {{ end }}
     {{ with .Params.families }}
-      {{- $page := $.Site.GetPage (printf "/families/%s" (index . 0)) -}}
+      {{- $page := $.Site.GetPage (printf "/families/%s/" (index . 0)) -}}
       <dt>Family</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
@@ -32,7 +32,7 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := $.Site.GetPage (printf "/capabilities/%s" .) -}}
+            {{- $page := $.Site.GetPage (printf "/capabilities/%s/" .) -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
@@ -43,14 +43,14 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := $.Site.GetPage (printf "/keywords/%s" .) -}}
+            {{- $page := $.Site.GetPage (printf "/keywords/%s/" .) -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
       </dd>
     {{ end }}
     {{ with .Params.implementation_languages }}
-      {{- $page := $.Site.GetPage (printf "/implementation_languages/%s" (index . 0)) -}}
+      {{- $page := $.Site.GetPage (printf "/implementation_languages/%s/" (index . 0)) -}}
       <dt>Language</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}

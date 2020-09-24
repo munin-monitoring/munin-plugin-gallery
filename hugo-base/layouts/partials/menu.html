@@ -12,7 +12,7 @@
          <ul class="navbar-nav flex-column pt-3">
            {{- $currentNode := . }}
            {{ range $taxonomy_name, $taxonomy := .Site.Taxonomies }}
-             {{ with $.Site.GetPage (printf "/%s" $taxonomy_name) }}
+             {{ with $.Site.GetPage (printf "/%s/" $taxonomy_name) }}
                {{ if not (default false .Params.ignore_in_sidebar) }}
                  <li data-nav-id="{{.RelPermalink}}" class="nav-item my-1 haschildren
                      {{- if .IsAncestor $currentNode}} parent{{end}}
@@ -23,7 +23,7 @@
                    <ul class="list-unstyled ml-2">
                      {{ range $key, $value := $taxonomy }}
                      <li>
-                       {{- $term_page := $.Site.GetPage (printf "/%s/%s" $taxonomy_name $key) -}}
+                       {{- $term_page := $.Site.GetPage (printf "/%s/%s/" $taxonomy_name $key) -}}
                        <a href="{{ $term_page.Permalink }}" class="nav-link p-0">
                          {{ $term_page.Title }} ({{ $taxonomy.Count $key }})
                        </a>
