@@ -1,5 +1,6 @@
 {{ define "main" }}
-    {{ $data := .Data }}
+  {{/* display the list of terms for a given taxonomy (e.g. all graph categories) */}}
+  {{ $data := .Data }}
   <article class="cf pa3 pa4-m pa4-l">
     <div class="measure-wide-l center f4 lh-copy nested-copy-line-height nested-links nested-img mid-gray">
       {{ .Content }}
