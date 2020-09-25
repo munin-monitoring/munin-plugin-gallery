@@ -400,7 +400,7 @@ class MuninPluginSource:
                 self._plugins_directory = await self._import_archive(
                     self._extract_directory, self._source_location, path=self._filter_path)
             elif self._source_type == RepositorySourceType.DIRECTORY:
-                self._plugins_directory = self._source_location
+                self._plugins_directory = os.path.join(self._source_location, self._filter_path)
             else:
                 raise ValueError("Invalid source type: {}".format(self._source_type))
             self._is_downloaded = True
