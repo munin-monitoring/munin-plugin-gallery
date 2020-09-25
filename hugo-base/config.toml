@@ -37,6 +37,7 @@ enableRobotsTXT = true
   implementation_language = "implementation_languages"
   keyword = "keywords"
   repository = "repositories"
+  author = "authors"
 
 
 [[menu.shortcuts]]
@@ -53,6 +54,11 @@ enableRobotsTXT = true
   name = "Keywords"
   url = "/keywords/"
   weight = 40
+
+[[menu.shortcuts]]
+  name = "Authors"
+  url = "/authors/"
+  weight = 50
 
 [[menu.shortcuts]]
   name = "Sources"

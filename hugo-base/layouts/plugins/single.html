@@ -54,6 +54,17 @@
       <dt>Language</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
+    {{ with .Params.authors }}
+      <dt>Authors</dt>
+      <dd>
+        <ul>
+          {{ range . }}
+            {{- $page := $.Site.GetPage (printf "/authors/%s/" .) -}}
+            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
+          {{ end }}
+        </ul>
+      </dd>
+    {{ end }}
   </dl>
 </div>
 

@@ -124,6 +124,15 @@ class MuninPlugin:
         (re.compile(r"^#!@@PYTHON@@"), "#!/usr/bin/env python3"),
         (re.compile(r"^#!@@RUBY@@"), "#!/usr/bin/ruby"),
     )
+    COPYRIGHT_REGEX = re.compile(
+        r"^.{0,15}(?:Copyright|copying)(?:\s+\(c\))?.*?\b([a-z\s]+)\b[\d,<\(]?.*$",
+        flags=re.IGNORECASE)
+    AUTHOR_HEADING_START_REGEX = re.compile(r"^=head1 (AUTHORS?|COPYRIGHT)$", flags=re.IGNORECASE)
+    AUTHOR_HEADING_END_REGEX = re.compile(r"^=(head|cut)", flags=re.IGNORECASE)
+    # we expect up to three name components - anything else is probably a textual description
+    AUTHOR_BARE_NAME_REGEX = re.compile(
+        r"^\s*(?:.*:\s+|(?:Copyright|copying)(?:\s+\(c\))?\s+|\(c\)\s+\d+,\s+|\(\d+\)\s+|contributed by\s+|)((?:\w+\s){1,2}\w+)(?:\s+[\d,<\(].*|.)?$",
+        flags=re.IGNORECASE)
 
     def __init__(self, plugin_filename, repository_source=None, name=None, language=None):
         self.plugin_filename = plugin_filename
@@ -170,6 +179,7 @@ class MuninPlugin:
                 self.changed_timestamp = None
             self.path_keywords = tuple(self._get_keywords())
             self.summary = self._guess_summary()
+            self.authors = await self._guess_authors()
             if self.implementation_language is None:
                 self.implementation_language = self._parse_implementation_language()
             self._is_initialized = True
@@ -205,6 +215,65 @@ class MuninPlugin:
                 return match.groupdict()["summary"]
         else:
             return None
+
+    async def _guess_authors(self):
+        result = []
+        def maybe_add_to_result(token):
+            token = token.strip()
+            if token and token[0].isupper() and (token not in result):
+                result.append(token)
+        is_in_author_header = False
+        for line in self.plugin_code.splitlines():
+            match = self.COPYRIGHT_REGEX.search(line)
+            if match:
+                maybe_add_to_result(match.groups()[0].strip())
+            elif not is_in_author_header:
+                match = self.AUTHOR_HEADING_START_REGEX.search(line)
+                if match:
+                    is_in_author_header = True
+            elif is_in_author_header:
+                match = self.AUTHOR_HEADING_END_REGEX.search(line)
+                if match:
+                    is_in_author_header = False
+                else:
+                    match = self.AUTHOR_BARE_NAME_REGEX.search(line)
+                    if match:
+                        author_name = match.groups()[0].strip()
+                        if author_name not in result:
+                            for item in (
+                                    "known", "contribut", "bears no resemblance", "license",
+                                    "all rights reserved", "left join", "linpro as", "_", "."):
+                                if item in author_name.lower():
+                                    break
+                            else:
+                                maybe_add_to_result(author_name)
+        if self.repository_source._source_type == RepositorySourceType.GIT:
+            for author in await self._get_git_authors():
+                maybe_add_to_result(author)
+        return result
+
+    async def _get_git_authors(self):
+        dirname = os.path.dirname(self.plugin_filename)
+        basename = os.path.basename(self.plugin_filename)
+        try:
+            process = await asyncio.subprocess.create_subprocess_exec(
+                *("git", "log", "--follow", "--no-merges", "--format=format:%an", "--", basename),
+                cwd=dirname, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        except OSError:
+            logging.warning(
+                "Failed to run 'git log' while retrieving the timestamp of '{}'.".format(filename))
+            return []
+        author_lines, error_output = await process.communicate()
+        if process.returncode != 0:
+            logging.warning(
+                "Failed to retrieve authors of '{}' via 'git log': {}"
+                .format(filename, error_output.decode()))
+            return []
+        result = []
+        for line in author_lines.decode().splitlines():
+            if line not in result:
+                result.append(line)
+        return result
 
     @classmethod
     def _rewrite_match_capitalization(cls, match):
@@ -295,6 +364,7 @@ class MuninPlugin:
             "categories": set(self.categories),
             "keywords": set(self.path_keywords),
             "unexpected_categories": self.get_unexpected_categories(),
+            "authors": tuple(self.authors),
             "image_filenames": dict(self._image_filenames),
             "changed_timestamp": self.changed_timestamp,
         }
@@ -580,6 +650,8 @@ class MuninPluginsHugoExport:
             plugin.implementation_language or self.UNKNOWN_PLACEHOLDER]
         if plugin.documentation:
             result["indexing_content"] = ContentIndexer.get_indexing_content(plugin.documentation)
+        if plugin.authors:
+            result["authors"] = tuple(plugin.authors)
         return result
 
     @staticmethod
