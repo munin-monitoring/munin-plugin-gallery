@@ -11,7 +11,7 @@ Depends:
  hugo (>=0.68),
  python3-aiohttp,
  python3-yaml,
-Architecture: any
+Architecture: all
 Description: Dependency package for munin-plugin-gallery
  Th munin plugin gallery generator retrieves munin plugins from
  configured sources and generates a static website visualizing
