@@ -101,7 +101,12 @@ class MuninPlugin:
     # the "stable-2.0" branch of the core repository uses a ".in" suffix for all plugin files
     OPTIONAL_PLUGIN_FILENAME_SUFFIXES = (".in",)
     FAMILY_REGEX = re.compile(r"^.*#%#\s*family\s*=\s*(.+)$")
-    CAPABILITIES_REGEX = re.compile(r"^.*#%#\s*capabilities\s*=\s*(.+)$")
+    CAPABILITIES_HEADER_REGEX = re.compile(r"^.*#%#\s*capabilities\s*=\s*(.+)$")
+    # the following words are just good indicators of capabilities- not a real proof
+    CAPABILITIES_INDICATOR_REGEXES = {
+        "multigraph": re.compile(r"\b(need_multigraph|multigraph)\b", flags=re.IGNORECASE),
+        "dirtyconfig": re.compile(r"\bMUNIN_CAP_DIRTYCONFIG\b"),
+    }
     # Most plugins contain a description in the first few lines ("NAME - SUMMARY ...").
     # Some irrelevant tokens (e.g. the prefix "Munin Plugin to" or a trailing dot) are ignored.
     SUMMARY_REGEX = re.compile(
@@ -351,12 +356,20 @@ class MuninPlugin:
         return documentation
 
     def _parse_capabilities(self):
+        result = set()
         for line in self.plugin_code.splitlines():
-            match = self.CAPABILITIES_REGEX.search(line)
+            match = self.CAPABILITIES_HEADER_REGEX.search(line)
             if match:
-                return tuple(match.groups()[0].strip().lower().split())
-        else:
-            return None
+                result.update(match.groups()[0].strip().lower().split())
+                break
+        for capability, regex in self.CAPABILITIES_INDICATOR_REGEXES.items():
+            if regex.search(self.plugin_code):
+                result.add(capability)
+        # The "wildcard" configuration ability is not really a capability. But this is the least
+        # unsuitable place to indicate this behaviour
+        if self.plugin_filename.endswith("_"):
+            result.add("wildcard")
+        return tuple(sorted(result))
 
     def _parse_family(self):
         for line in self.plugin_code.splitlines():
