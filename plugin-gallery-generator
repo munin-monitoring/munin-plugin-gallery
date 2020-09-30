@@ -596,7 +596,7 @@ class MuninPluginSource:
             return None
         elif self._source_type == RepositorySourceType.DIRECTORY:
             stat = os.stat(filename, follow_symlinks=True)
-            return datetime.datetime.fromtimestamp(stat.st_ctime)
+            return datetime.datetime.fromtimestamp(stat.st_ctime).astimezone()
         else:
             raise ValueError("Invalid source type: {}".format(self._source_type))
 
