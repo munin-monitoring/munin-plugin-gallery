@@ -39,8 +39,9 @@ import asyncio.subprocess
 import collections
 import datetime
 import enum
-import multiprocessing
+import json
 import logging
+import multiprocessing
 import os
 import pathlib
 import re
@@ -48,6 +49,7 @@ import shutil
 import sys
 import tempfile
 import time
+import urllib.request
 
 import aiohttp
 import yaml
@@ -55,6 +57,8 @@ import yaml
 
 EXAMPLE_GRAPH_DIRECTORY_NAME = "example-graphs"
 INDEXING_IGNORE_WORDS_FILE = os.path.join(os.path.dirname(__file__), "indexing-ignore-words.txt")
+SPDX_LICENSE_DATA_URL = (
+    "https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json")
 
 
 class RepositorySourceType(enum.Enum):
@@ -92,6 +96,106 @@ class MuninPluginRepositoryProcessingError(IOError):
 
 class ConfigurationImportError(ValueError):
     """ any kind of data validation problem encountered while processing the configuration file """
+
+
+class LicenseInformation(
+        collections.namedtuple("LicenseInformation", ("name", "key", "url"))):
+    pass
+
+
+class LicenseParser:
+    """ Determine the license of a given source code.
+
+    TODO: add detection based on non-SPDX keywords
+    """
+    MANUAL_KEYWORD_LICENSE_MAP = (
+        ("Public Domain", "GPL-2.0-only"),
+        ("GPLv2", "GPL-2.0-only"),
+        ("GPL v2", "GPL-2.0-only"),
+        ("GPL (v2)", "GPL-2.0-only"),
+        ("GPLv2+", "GPL-2.0-or-later"),
+        ("GPL v2+", "GPL-2.0-or-later"),
+        ("GNU General Public License, version 2 or later", "GPL-2.0-or-later"),
+        ("GNU General Public License, version 2", "GPL-2.0-only"),
+        ("Free Software Foundation; version 2 only", "GPL-2.0-only"),
+        ("version 2 dated June,", "GPL-2.0-only"),
+        ("either version 3 of the License,", "GPL-2.0-or-later"),
+        ("either version 3 of the License,", "GPL-3.0-or-later"),
+        ("GPLv3", "GPL-3.0-only"),
+        ("GPL v3", "GPL-3.0-only"),
+        ("GPL (v3)", "GPL-3.0-only"),
+        ("GPLv3+", "GPL-3.0-or-later"),
+        ("GPL v3+", "GPL-3.0-or-later"),
+        ("LGPL", "LGPL-2.0-only"),
+        ("LGPLv3", "LGPL-3.0-only"),
+        ("LGPL v3", "LGPL-3.0-only"),
+        ("LGPL (v3)", "LGPL-3.0-only"),
+        ("use, copy, and modify this software with or without fee, provided", "ISC"),
+        ("Attribution-ShareAlike 1.0", "CC-BY-1.0"),
+        ("Attribution-ShareAlike 2.0", "CC-BY-2.0"),
+        ("Attribution-ShareAlike 2.5", "CC-BY-2.5"),
+        ("http://creativecommons.org/licenses/by-sa/3.0/", "CC-BY-3.0"),
+        ("Attribution-ShareAlike 3.0", "CC-BY-3.0"),
+        ("http://creativecommons.org/licenses/by-sa/4.0/", "CC-BY-3.0"),
+        ("Attribution-ShareAlike 4.0", "CC-BY-4.0"),
+    )
+
+    def __init__(self):
+        licenses = {
+            item["licenseId"]: LicenseInformation(
+                item["name"], item["licenseId"], item["seeAlso"][0])
+            for item in self._download_license_data()
+        }
+        regexes = []
+        for license in licenses.values():
+            regex = re.compile(r"\b{}\b".format(re.escape(license.key)))
+            regexes.append((regex, 10, license))
+            # add optional alias for "*-or-later"
+            if license.key.endswith("+"):
+                regex = re.compile(r"\b{}-or-later\b".format(re.escape(license.key[:-1])))
+                regexes.append((regex, 10, license))
+            if license.key.endswith("-or-later"):
+                regex = re.compile(r"\b{}\+\b".format(re.escape(license.key[:-9])))
+                regexes.append((regex, 10, license))
+        for keyword, license_id in self.MANUAL_KEYWORD_LICENSE_MAP:
+            regex = re.compile(r"\b{}\b".format(re.escape(keyword)))
+            regexes.append((regex, 5, licenses[license_id]))
+        # sort regexes by priority (higher first) and length (higher first)
+        regexes.sort(key=lambda item: (-item[1], -len(item[0].pattern)))
+        # remove priority from list (it was only used for sorting)
+        self.license_regexes = tuple((regex, license) for regex, priority, license in regexes)
+
+    @staticmethod
+    def _download_license_data():
+        try:
+            with urllib.request.urlopen(SPDX_LICENSE_DATA_URL) as download:
+                raw = download.read()
+        except IOError as exc:
+            logging.warning(
+                "Failed to download SPDX license data (%s): %s", SPDX_LICENSE_DATA_URL, exc)
+            return {}
+        try:
+            data = json.loads(raw)
+        except ValueError as exc:
+            logging.warning(
+                "Failed to parse SPDX license data (%s): %s", SPDX_LICENSE_DATA_URL, exc)
+            return {}
+        try:
+            return data["licenses"]
+        except KeyError as exc:
+            logging.warning(
+                "Invalid SPDX license data format (%s): missing key 'licenses'",
+                SPDX_LICENSE_DATA_URL)
+            return {}
+
+    def parse_code(self, code):
+        # join lines and remove line comment indicators
+        processed = " ".join(re.sub(r"^#\s*", "", line) for line in code.splitlines())
+        for regex, license in self.license_regexes:
+            if regex.search(processed):
+                return license
+        else:
+            return None
 
 
 class MuninPlugin:
@@ -171,7 +275,8 @@ class MuninPlugin:
         r"^\s*(?:.*:\s+|(?:Copyright|copying)(?:\s+\(c\))?\s+|\(c\)\s+\d+,\s+|\(\d+\)\s+|contributed by\s+|)((?:\w+\s){1,2}\w+)(?:\s+[\d,<\(].*|.)?$",
         flags=re.IGNORECASE)
 
-    def __init__(self, plugin_filename, repository_source=None, name=None, language=None):
+    def __init__(self, plugin_filename, repository_source=None, name=None, language=None,
+                 license_parser=None):
         self.plugin_filename = plugin_filename
         self.repository_source = repository_source
         self.name = os.path.basename(plugin_filename) if name is None else name
@@ -180,6 +285,7 @@ class MuninPlugin:
             if self.name.endswith(suffix):
                 self.name = self.name[:-len(suffix)]
         self.example_graphs = self._find_images()
+        self.license_parser = license_parser
         self._is_initialized = False
 
     def _find_images(self):
@@ -217,6 +323,7 @@ class MuninPlugin:
             self.path_keywords = tuple(self._get_keywords())
             self.summary = self._guess_summary()
             self.authors = await self._guess_authors()
+            self.license = self.license_parser.parse_code(self.plugin_code)
             if self.implementation_language is None:
                 self.implementation_language = self._parse_implementation_language()
             self._is_initialized = True
@@ -552,7 +659,7 @@ class MuninPluginSource:
                 "Failed to extract source archive ({}): {}"
                 .format(archive_url, (await process.stderr.read()).decode()))
 
-    async def get_plugins(self):
+    async def get_plugins(self, license_parser=None):
         await self.initialize()
         for dirpath, dirnames, filenames in os.walk(self._plugins_directory):
             if os.path.basename(dirpath) in {EXAMPLE_GRAPH_DIRECTORY_NAME, "node.d.debug"}:
@@ -569,17 +676,20 @@ class MuninPluginSource:
                     pass
                 # every executable file is assumed to be a plugin
                 if status.st_mode & 0o100 > 0:
-                    yield MuninPlugin(full_path, self)
+                    yield MuninPlugin(full_path, self, license_parser=license_parser)
                 elif filename.endswith(".in"):
                     # the plugin files in the stable-2.0 repository are not executable
                     yield MuninPlugin(
-                        full_path, repository_source=self, name=filename[:-3])
+                        full_path, repository_source=self, name=filename[:-3],
+                        license_parser=license_parser)
                 elif filename.endswith(".c"):
                     yield MuninPlugin(
-                        full_path, repository_source=self, name=filename[:-2], language="c")
+                        full_path, repository_source=self, name=filename[:-2], language="c",
+                        license_parser=license_parser)
                 elif filename.endswith(".cpp"):
                     yield MuninPlugin(
-                        full_path, repository_source=self, name=filename[:-4], language="cpp")
+                        full_path, repository_source=self, name=filename[:-4], language="cpp",
+                        license_parser=license_parser)
                 else:
                     # this file is probably not a plugin
                     pass
@@ -697,6 +807,7 @@ class MuninPluginsHugoExport:
             result["indexing_content"] = ContentIndexer.get_indexing_content(plugin.documentation)
         if plugin.authors:
             result["authors"] = tuple(plugin.authors)
+        result["licenses"] = [plugin.license.key if plugin.license else self.UNKNOWN_PLACEHOLDER]
         return result
 
     @staticmethod
@@ -771,9 +882,9 @@ class MuninPluginsHugoExport:
         }
 
 
-async def import_plugin_source_archive(plugin_source, plugin_queue):
+async def import_plugin_source_archive(plugin_source, plugin_queue, license_parser=None):
     try:
-        async for plugin in plugin_source.get_plugins():
+        async for plugin in plugin_source.get_plugins(license_parser=license_parser):
             logging.info("Adding plugin '{}'".format(plugin.name))
             await plugin_queue.put(plugin)
     except Exception as exc:
@@ -813,8 +924,10 @@ async def worker_export_plugins_to_hugo(exporter, input_queue):
 async def import_plugins(plugin_sources, initialized_plugins):
     pending_plugins = asyncio.Queue()
     plugin_source_workers = []
+    license_parser = LicenseParser()
     for source in plugin_sources:
-        task = asyncio.create_task(import_plugin_source_archive(source, pending_plugins))
+        task = asyncio.create_task(
+            import_plugin_source_archive(source, pending_plugins, license_parser=license_parser))
         plugin_source_workers.append(task)
     plugin_workers = []
     for _ in range(multiprocessing.cpu_count()):
@@ -859,8 +972,9 @@ async def transfer_queue_to_list(input_queue):
 
 
 async def import_local_plugins(plugin_filenames):
+    license_parser = LicenseParser()
     for plugin_filename in plugin_filenames:
-        plugin = MuninPlugin(plugin_filename)
+        plugin = MuninPlugin(plugin_filename, license_parser=license_parser)
         await plugin.initialize()
         print(plugin.get_details())
 

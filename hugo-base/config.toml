@@ -38,6 +38,7 @@ enableRobotsTXT = true
   keyword = "keywords"
   repository = "repositories"
   author = "authors"
+  license = "licenses"
 
 
 [[menu.shortcuts]]

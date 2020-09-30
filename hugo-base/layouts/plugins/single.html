@@ -54,6 +54,11 @@
       <dt>Language</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
+    {{ with .Params.licenses }}
+      {{- $page := $.Site.GetPage (printf "/licenses/%s/" (index . 0)) -}}
+      <dt>License</dt>
+      <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
+    {{ end }}
     {{ with .Params.authors }}
       <dt>Authors</dt>
       <dd>
