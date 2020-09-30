@@ -386,7 +386,7 @@ class MuninPlugin:
                         if author_name not in result:
                             for item in (
                                     "known", "contribut", "bears no resemblance", "license",
-                                    "all rights reserved", "left join", "linpro as", "_", "."):
+                                    "all rights reserved", "left join", "linpro as", "_"):
                                 if item in author_name.lower():
                                     break
                             else:
