@@ -272,7 +272,8 @@ class MuninPlugin:
     AUTHOR_HEADING_END_REGEX = re.compile(r"^=(head|cut)", flags=re.IGNORECASE)
     # we expect up to three name components - anything else is probably a textual description
     AUTHOR_BARE_NAME_REGEX = re.compile(
-        r"^\s*(?:.*:\s+|(?:Copyright|copying)(?:\s+\(c\))?\s+|\(c\)\s+\d+,\s+|\(\d+\)\s+|contributed by\s+|)((?:\w+\s){1,2}\w+)(?:\s+[\d,<\(].*|.)?$",
+        r"^\s*(?:.*:\s+|(?:Copyright|copying)(?:\s+\(c\))?\s+|\(c\)\s+\d+,\s+|\(\d+\)\s+"
+        r"|contributed by\s+|)((?:[\w.-]+\s){1,2}[\w.-]+)(?:\s+[\d,<\(].*|.)?$",
         flags=re.IGNORECASE)
 
     def __init__(self, plugin_filename, repository_source=None, name=None, language=None,
