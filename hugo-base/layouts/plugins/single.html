@@ -65,7 +65,7 @@
         <ul>
           {{ range . }}
             {{- $page := $.Site.GetPage (printf "/authors/%s/" (urlize .)) -}}
-            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
+            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title | default }}</a></li>
           {{ end }}
         </ul>
       </dd>
