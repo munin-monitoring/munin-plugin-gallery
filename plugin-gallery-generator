@@ -182,7 +182,7 @@ class LicenseParser:
             return {}
         try:
             return data["licenses"]
-        except KeyError as exc:
+        except KeyError:
             logging.warning(
                 "Invalid SPDX license data format (%s): missing key 'licenses'",
                 SPDX_LICENSE_DATA_URL)
@@ -362,11 +362,11 @@ class MuninPlugin:
             return None
 
     async def _guess_authors(self):
-        result = []
         def maybe_add_to_result(token):
             token = token.strip()
             if token and token[0].isupper() and (token not in result):
                 result.append(token)
+        result = []
         is_in_author_header = False
         for line in self.plugin_code.splitlines():
             match = self.COPYRIGHT_REGEX.search(line)
@@ -407,13 +407,14 @@ class MuninPlugin:
                 cwd=dirname, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         except OSError:
             logging.warning(
-                "Failed to run 'git log' while retrieving the timestamp of '{}'.".format(filename))
+                "Failed to run 'git log' while retrieving the timestamp of '%s'.",
+                self.plugin_filename)
             return []
         authors, error_output = await process.communicate()
         if process.returncode != 0:
             logging.warning(
-                "Failed to retrieve authors of '{}' via 'git log': {}"
-                .format(filename, error_output.decode()))
+                "Failed to retrieve authors of '%s' via 'git log': %s",
+                self.plugin_filename, error_output.decode())
             return []
         result = []
         # try a few encodings, since "git log" may output non-utf8 characters
