@@ -416,9 +416,16 @@ class MuninPlugin:
                 .format(filename, error_output.decode()))
             return []
         result = []
-        # ignore decoding errors, since "git log" may output non-utf8 characters
-        author_lines = authors.decode(errors="ignore").splitlines()
-        for line in author_lines:
+        # try a few encodings, since "git log" may output non-utf8 characters
+        for encoding in ("utf8", "cp1250"):
+            try:
+                authors = authors.decode(encoding)
+                break
+            except ValueError:
+                pass
+        else:
+            authors = authors.decode(errors="ignore")
+        for line in authors.splitlines():
             if line not in result:
                 result.append(line)
         return result
