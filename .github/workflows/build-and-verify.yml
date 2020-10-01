@@ -14,6 +14,11 @@ jobs:
           submodules: True
       - name: Install dependencies
         run: sudo apt-get install --yes --quiet codespell git hugo jq make python3-aiohttp python3-flake8 python3-yaml
+      # the gallery requires at least hugo 0.73 due to changes regarding taxonomies and terms
+      - name: Install newer hugo version
+        run: |
+          sudo add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ groovy universe"
+          sudo apt-get install --yes --quiet --target-release focal hugo/groovy
       - name: Build website
         run: make build
       - name: Analyze the code and spelling

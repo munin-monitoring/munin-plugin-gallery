@@ -8,7 +8,7 @@ Package: munin-plugin-gallery-dependencies
 Version: 1.0
 Maintainer: Lars Kruse <devel@sumpfralle.de>
 Depends:
- hugo (>=0.68),
+ hugo (>=0.73),
  python3-aiohttp,
  python3-yaml,
 Architecture: all
