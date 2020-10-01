@@ -402,20 +402,23 @@ class MuninPlugin:
         basename = os.path.basename(self.plugin_filename)
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                *("git", "log", "--follow", "--no-merges", "--format=format:%an", "--", basename),
+                *("git", "--no-pager", "log", "--follow", "--no-merges", "--format=format:%an",
+                  "--", basename),
                 cwd=dirname, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         except OSError:
             logging.warning(
                 "Failed to run 'git log' while retrieving the timestamp of '{}'.".format(filename))
             return []
-        author_lines, error_output = await process.communicate()
+        authors, error_output = await process.communicate()
         if process.returncode != 0:
             logging.warning(
                 "Failed to retrieve authors of '{}' via 'git log': {}"
                 .format(filename, error_output.decode()))
             return []
         result = []
-        for line in author_lines.decode().splitlines():
+        # ignore decoding errors, since "git log" may output non-utf8 characters
+        author_lines = authors.decode(errors="ignore").splitlines()
+        for line in author_lines:
             if line not in result:
                 result.append(line)
         return result
