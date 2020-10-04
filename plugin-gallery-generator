@@ -362,16 +362,40 @@ class MuninPlugin:
             return None
 
     async def _guess_authors(self):
-        def maybe_add_to_result(token):
-            token = token.strip()
-            if token and token[0].isupper() and (token not in result):
-                result.append(token)
+        def split_and_maybe_add(result, text):
+            """ split the text into into multiple authors and add new authors to the "result" list
+            """
+            tokens = [text]
+            for tokenizer in (",", "/", " and "):
+                new_tokens = []
+                for token in tokens:
+                    new_tokens.extend(token.split(tokenizer))
+                tokens = new_tokens
+            for token in tokens:
+                token = token.strip()
+                for ignore_suffix in [" and others", ", changed by me"]:
+                    if token.endswith(ignore_suffix):
+                        token = token[:-len(ignore_suffix)]
+                if token in {"HOLDERS BE LIABLE FOR ANY CLAIM", "LICENSE"}:
+                    # ignore misleading terms following the word "COPYRIGHT"
+                    pass
+                elif not token:
+                    # ignore empty strings
+                    pass
+                elif token[0].islower():
+                    # terms starting with a lowercase letter are probably not names
+                    pass
+                elif token in result:
+                    # do not add duplicates
+                    pass
+                else:
+                    result.append(token)
         result = []
         is_in_author_header = False
         for line in self.plugin_code.splitlines():
             match = self.COPYRIGHT_REGEX.search(line)
             if match:
-                maybe_add_to_result(match.groups()[0].strip())
+                split_and_maybe_add(result, match.groups()[0].strip())
             elif not is_in_author_header:
                 match = self.AUTHOR_HEADING_START_REGEX.search(line)
                 if match:
@@ -391,10 +415,10 @@ class MuninPlugin:
                                 if item in author_name.lower():
                                     break
                             else:
-                                maybe_add_to_result(author_name)
+                                split_and_maybe_add(result, author_name)
         if self.repository_source._source_type == RepositorySourceType.GIT:
             for author in await self._get_git_authors():
-                maybe_add_to_result(author)
+                split_and_maybe_add(result, author)
         return result
 
     async def _get_git_authors(self):
