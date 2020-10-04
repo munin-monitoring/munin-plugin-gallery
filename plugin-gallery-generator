@@ -863,7 +863,10 @@ class MuninPluginsHugoExport:
         if plugin.changed_timestamp:
             os.utime(path, tuple(2 * [int(plugin.changed_timestamp.timestamp())]))
 
-    async def add(self, plugin):
+    def add(self, plugin):
+        self.plugins.append(plugin)
+
+    async def export_plugin(self, plugin):
         if plugin.repository_source:
             plugin_directory = os.path.join(
                 self._export_directory, plugin.repository_source.name, plugin.name)
@@ -911,7 +914,6 @@ class MuninPluginsHugoExport:
             })
         self._set_timestamp_of_plugin(export_filename, plugin)
         self._set_timestamp_of_plugin(plugin_directory, plugin)
-        self.plugins.append(plugin)
 
     def get_statistics(self):
         return {
@@ -958,8 +960,9 @@ async def worker_initialize_plugins(jobs, destination):
 async def worker_export_plugins_to_hugo(exporter, input_queue):
     while True:
         new_plugin = await input_queue.get()
+        exporter.add(new_plugin)
         try:
-            await exporter.add(new_plugin)
+            await exporter.export_plugin(new_plugin)
         except Exception as exc:
             logging.error("Failed to add plugin to exporter: {}".format(exc))
         input_queue.task_done()
