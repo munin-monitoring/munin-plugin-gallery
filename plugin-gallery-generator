@@ -541,7 +541,7 @@ class MuninPlugin:
                    for blacklist_regex in self.CATEGORY_LINE_BLACKLIST_REGEXES):
                 continue
             categories.add(category.lower())
-        return categories
+        return tuple(sorted(categories))
 
     def _parse_implementation_language(self):
         first_line = self.plugin_code.splitlines()[0]
