@@ -67,6 +67,16 @@ class RepositorySourceType(enum.Enum):
     DIRECTORY = "directory"
 
 
+class YamlDataDumper(yaml.Dumper):
+    """ provide representations for a few non-default data types """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_representer(
+            collections.OrderedDict, lambda dumper, data: dumper.represent_dict(data.items()))
+        self.add_representer(tuple, lambda dumper, data: dumper.represent_list(data))
+
+
 class MuninPluginExampleGraph(collections.namedtuple("MuninPluginExampleGraph", "key filename")):
 
     def _get_sort_key(self):
@@ -883,11 +893,7 @@ class MuninPluginsHugoExport:
             meta_data = self.get_hugo_frontmatter(plugin)
             if local_graphs:
                 meta_data["example_graphs"] = local_graphs
-            # convert tuples to lists - for basic type dumps in yaml
-            for key in meta_data:
-                if isinstance(meta_data[key], tuple):
-                    meta_data[key] = list(meta_data[key])
-            plugin_file.write(yaml.dump(meta_data, indent=4))
+            plugin_file.write(yaml.dump(meta_data, Dumper=YamlDataDumper, indent=4))
             plugin_file.write("---" + os.linesep)
             plugin_file.write(documentation + os.linesep)
             show_source_format_string = """
