@@ -788,14 +788,16 @@ class MuninPluginsHugoExport:
     UNKNOWN_PLACEHOLDER = "unknown"
     PLUGINS_SUBDIRECTORY = "plugins"
 
-    def __init__(self, hugo_directory, plugins_directory, baseurl="http://localhost/",
-                 hugo_environment="production"):
+    def __init__(self, hugo_directory, export_directory, baseurl="http://localhost/",
+                 hugo_environment="production", clean_export_directory=True):
         self._hugo_directory = hugo_directory
         self._baseurl = baseurl
         self._hugo_environment = hugo_environment
-        self._content_directory = os.path.join(self._hugo_directory, "content")
-        self._plugins_directory = plugins_directory
-        self._plugins = []
+        self._export_directory = export_directory
+        self.plugins = []
+        if clean_export_directory:
+            if os.path.exists(self._export_directory):
+                shutil.rmtree(self._export_directory)
 
     async def _run_hugo(self, action=None, hide_output=True):
         call_args = ["hugo", "--baseURL", self._baseurl, "--environment", self._hugo_environment]
@@ -864,9 +866,9 @@ class MuninPluginsHugoExport:
     async def add(self, plugin):
         if plugin.repository_source:
             plugin_directory = os.path.join(
-                self._plugins_directory, plugin.repository_source.name, plugin.name)
+                self._export_directory, plugin.repository_source.name, plugin.name)
         else:
-            plugin_directory = os.path.join(self._plugins_directory, plugin.name)
+            plugin_directory = os.path.join(self._export_directory, plugin.name)
         try:
             os.makedirs(plugin_directory, exist_ok=True)
         except OSError as exc:
@@ -905,21 +907,21 @@ class MuninPluginsHugoExport:
                 "language": plugin.implementation_language or "",
                 "path": os.path.join(
                     self.PLUGINS_SUBDIRECTORY,
-                    *pathlib.Path(source_path).relative_to(self._plugins_directory).parts),
+                    *pathlib.Path(source_path).relative_to(self._export_directory).parts),
             })
         self._set_timestamp_of_plugin(export_filename, plugin)
         self._set_timestamp_of_plugin(plugin_directory, plugin)
-        self._plugins.append(plugin)
+        self.plugins.append(plugin)
 
     def get_statistics(self):
         return {
-            "all": len(self._plugins),
-            "missing_documentation": len([p for p in self._plugins if not p.documentation]),
-            "missing_family": len([p for p in self._plugins if not p.family]),
-            "missing_capabilities": len([p for p in self._plugins if not p.capabilities]),
-            "missing_summary": len([p for p in self._plugins if not p.summary]),
+            "all": len(self.plugins),
+            "missing_documentation": len([p for p in self.plugins if not p.documentation]),
+            "missing_family": len([p for p in self.plugins if not p.family]),
+            "missing_capabilities": len([p for p in self.plugins if not p.capabilities]),
+            "missing_summary": len([p for p in self.plugins if not p.summary]),
             # TODO: evaluate
-            "unexpected_categories": len([p for p in self._plugins
+            "unexpected_categories": len([p for p in self.plugins
                                           if p.get_unexpected_categories()]),
         }
 
@@ -1022,14 +1024,10 @@ async def import_local_plugins(plugin_filenames):
 
 
 async def publish_plugins_hugo(
-        plugin_sources, hugo_directory, plugin_directory, website_settings,
-        skip_collect=False, skip_website=False, show_statistics=False):
-    export = MuninPluginsHugoExport(hugo_directory, plugin_directory, **website_settings)
+        plugin_sources, export, skip_collect=False, skip_website=False, show_statistics=False):
     timing_statistics = []
     if not skip_collect:
         start_time = time.monotonic()
-        if os.path.exists(plugin_directory):
-            shutil.rmtree(plugin_directory)
         loaded_plugins = asyncio.Queue()
         worker = asyncio.create_task(worker_export_plugins_to_hugo(export, loaded_plugins))
         await import_plugins(plugin_sources, loaded_plugins)
@@ -1039,14 +1037,14 @@ async def publish_plugins_hugo(
         start_time = time.monotonic()
         if not await export.build():
             logging.error("Failed to build the static export")
-            return None
+            return False
         timing_statistics.append(("Build Website", time.monotonic() - start_time))
     if show_statistics and not skip_collect:
         for key, value in export.get_statistics().items():
             print("{}: {}".format(key, value))
         for label, duration in timing_statistics:
             print("Runtime ({:s}): {:d} seconds".format(label, int(duration)))
-    return export
+    return True
 
 
 class CommandLineAction(enum.Enum):
@@ -1143,11 +1141,15 @@ def main():
         logging.error("Failed to import configuration file ({}): {}".format(args.config, exc))
         sys.exit(2)
     if wanted_action in {CommandLineAction.BUILD, CommandLineAction.SERVE}:
-        hugo_export = asyncio.run(publish_plugins_hugo(
-            plugin_sources, args.template_directory, args.target_plugin_directory,
-            website_settings=website_settings, skip_collect=args.skip_collect,
-            skip_website=args.skip_website, show_statistics=args.show_statistics))
-        if not hugo_export:
+        hugo_export = MuninPluginsHugoExport(
+            args.template_directory, args.target_plugin_directory,
+            baseurl=website_settings["baseurl"],
+            hugo_environment=website_settings["hugo_environment"],
+            clean_export_directory=(not args.skip_collect))
+        action_async = publish_plugins_hugo(
+            plugin_sources, hugo_export, skip_collect=args.skip_collect,
+            skip_website=args.skip_website, show_statistics=args.show_statistics)
+        if not asyncio.run(action_async):
             sys.exit(1)
         if wanted_action == CommandLineAction.SERVE:
             try:
