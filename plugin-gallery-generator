@@ -827,7 +827,7 @@ class MuninPluginsHugoExport:
     async def serve(self):
         return await self._run_hugo("serve", hide_output=False)
 
-    def get_hugo_frontmatter(self, plugin):
+    def get_metadata(self, plugin):
         result = {
             "title": plugin.name,
         }
@@ -895,7 +895,7 @@ class MuninPluginsHugoExport:
         export_filename = os.path.join(plugin_directory, "index.md")
         with open(export_filename, "w") as plugin_file:
             plugin_file.write("---" + os.linesep)
-            meta_data = self.get_hugo_frontmatter(plugin)
+            meta_data = self.get_metadata(plugin)
             if local_graphs:
                 meta_data["example_graphs"] = local_graphs
             plugin_file.write(yaml.dump(meta_data, Dumper=YamlDataDumper, indent=4))
