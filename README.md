@@ -76,8 +76,12 @@ sources:
     location: your-local-example-directory
 ```
 
-Afterwards you can inspect the content of `build/plugins/` and verify the resulting
-data export.
+Afterwards you should verify that the parser changes have the desired effect on the complete
+plugin collection.  You can do this by generating the metadata before and after your change by
+running the following command (hint: redirect the output to a file):
+```shell
+./plugin-gallery-generator --skip-website --show-metadata build
+```
 
 
 # Dependencies

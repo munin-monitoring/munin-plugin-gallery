@@ -1072,6 +1072,8 @@ def get_arguments():
                         help="Skip the website build process")
     parser.add_argument("--show-statistics", action="store_true",
                         help="Output various statistics after the build process")
+    parser.add_argument("--show-metadata", action="store_true",
+                        help="Output the metadata of all plugins")
     parser.add_argument("--config", default="config.yml",
                         help="Location of the configuration file")
     parser.add_argument("action", choices=tuple(item.value for item in CommandLineAction),
@@ -1154,6 +1156,15 @@ def main():
             skip_website=args.skip_website, show_statistics=args.show_statistics)
         if not asyncio.run(action_async):
             sys.exit(1)
+        if args.show_metadata:
+            metadata = {}
+            for plugin_source in plugin_sources:
+                metadata[plugin_source.name] = {
+                    plugin.name: hugo_export.get_metadata(plugin)
+                    for plugin in hugo_export.plugins
+                    if plugin.repository_source == plugin_source
+                }
+            print(yaml.dump(metadata, Dumper=YamlDataDumper, indent=4, sort_keys=True))
         if wanted_action == CommandLineAction.SERVE:
             try:
                 asyncio.run(hugo_export.serve())
