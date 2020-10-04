@@ -13,7 +13,7 @@ jobs:
         with:
           submodules: True
       - name: Install dependencies
-        run: sudo apt-get install --yes --quiet codespell git hugo jq make python3-aiohttp python3-flake8 python3-yaml
+        run: sudo apt-get install --yes --quiet codespell git hugo jq make perl-doc python3-aiohttp python3-flake8 python3-yaml
       # the gallery requires at least hugo 0.73 due to changes regarding taxonomies and terms
       - name: Install newer hugo version
         run: |

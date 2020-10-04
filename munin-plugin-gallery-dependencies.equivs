@@ -9,6 +9,7 @@ Version: 1.0
 Maintainer: Lars Kruse <devel@sumpfralle.de>
 Depends:
  hugo (>=0.73),
+ perl-doc,
  python3-aiohttp,
  python3-yaml,
 Architecture: all
