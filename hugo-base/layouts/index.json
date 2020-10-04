@@ -4,7 +4,7 @@
 {
 	"uri": "{{ $page.Permalink }}",
 	"title": {{ jsonify $page.Title }},
-	"keywords": {{ jsonify $page.Params.keywords }},
+	"tags": {{ jsonify $page.Params.keywords }},
 	"content": {{ $page.Params.indexing_content | default "" | jsonify }}
 }
 {{- end -}}
