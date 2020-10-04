@@ -1035,7 +1035,7 @@ async def publish_plugins_hugo(
             logging.error("Failed to build the static export")
             return None
         timing_statistics.append(("Build Website", time.monotonic() - start_time))
-    if show_statistics:
+    if show_statistics and not skip_collect:
         for key, value in export.get_statistics().items():
             print("{}: {}".format(key, value))
         for label, duration in timing_statistics:
