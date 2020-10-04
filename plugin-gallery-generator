@@ -278,14 +278,16 @@ class MuninPlugin:
         (re.compile(r"^#!@@RUBY@@"), "#!/usr/bin/ruby"),
     )
     COPYRIGHT_REGEX = re.compile(
-        r"^.{0,15}(?:Copyright|copying)(?:\s+\(c\))?.*?\b([a-z\s]+)\b[\d,<\(]?.*$",
+        r"^.{0,15}(?:Copyright|Copyleft|copying|\(c\)|Author:)(?:\s+\(c\))?(?:\s+\d+(?:-\d+)?,?)?"
+        r"(?:\s+-)?\s+((?:\w[\w.-]*\s){0,2}\w[\w.-]*?)(?:,.*|\s+[\d\-,<\(].*|\.|)$",
         flags=re.IGNORECASE)
     AUTHOR_HEADING_START_REGEX = re.compile(r"^=head1 (AUTHORS?|COPYRIGHT)$", flags=re.IGNORECASE)
     AUTHOR_HEADING_END_REGEX = re.compile(r"^=(head|cut)", flags=re.IGNORECASE)
     # we expect up to three name components - anything else is probably a textual description
     AUTHOR_BARE_NAME_REGEX = re.compile(
-        r"^\s*(?:.*:\s+|(?:Copyright|copying)(?:\s+\(c\))?\s+|\(c\)\s+\d+,\s+|\(\d+\)\s+"
-        r"|contributed by\s+|)((?:[\w.-]+\s){1,2}[\w.-]+)(?:\s+[\d,<\(].*|.)?$",
+        r"^\s*"
+        r"(?:(?:.*:|(?:Copyright|Copyleft|copying)(?:\s+\(c\))?|\(c\)|\(\d+\)|contributed by)\s+)?"
+        r"(?:\d+(?:-\d+)?,?\s+)?(?:-\s+)?((?:\w[\w.-]*\s){0,2}\w[\w.-]*?)(?:\s+[\d\-,<\(].*|\.|)?$",
         flags=re.IGNORECASE)
 
     def __init__(self, plugin_filename, repository_source=None, name=None, language=None,
@@ -384,11 +386,14 @@ class MuninPlugin:
                     new_tokens.extend(token.split(tokenizer))
                 tokens = new_tokens
             for token in tokens:
+                # remove "year" from copyright statements
+                token = re.sub(r"\b\d[\d-]+\b", "", token)
                 token = token.strip()
+                token = token.strip(".")
                 for ignore_suffix in [" and others", ", changed by me"]:
                     if token.endswith(ignore_suffix):
                         token = token[:-len(ignore_suffix)]
-                if token in {"HOLDERS BE LIABLE FOR ANY CLAIM", "LICENSE"}:
+                if token in {"HOLDERS BE LIABLE FOR ANY CLAIM", "LICENSE", "Copyright"}:
                     # ignore misleading terms following the word "COPYRIGHT"
                     pass
                 elif not token:
@@ -764,6 +769,7 @@ class ContentIndexer:
         re.compile(r"\b(\.+|\w)\b", flags=re.IGNORECASE),
         # remove all special characters
         re.compile(r"[^\w\s.]"),
+        re.compile(r"\bSPDX-License-Identifier:\b"),
     )
     MERGE_WHITESPACE_REGEX = re.compile(r"\s+")
 
