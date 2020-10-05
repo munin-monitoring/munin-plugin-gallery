@@ -76,9 +76,18 @@ sources:
     location: your-local-example-directory
 ```
 
-Afterwards you should verify that the parser changes have the desired effect on the complete
-plugin collection.  You can do this by generating the metadata before and after your change by
-running the following command (hint: redirect the output to a file):
+Alternatively you can output the parsed metadata of single files:
+
+```shell
+./plugin-gallery-generator --skip-website --show-metadata --plugin SOME_FILENAME build
+```
+
+
+## Verify changes
+
+After changes of the the parser code you should verify that these changes have the desired effect
+on the complete plugin collection.  You can do this by generating the metadata before and after
+your change by running the following command (hint: redirect the output to a file):
 ```shell
 ./plugin-gallery-generator --skip-website --show-metadata build
 ```
