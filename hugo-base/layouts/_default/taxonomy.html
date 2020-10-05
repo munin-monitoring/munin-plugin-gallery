@@ -12,7 +12,7 @@
   </article>
   <div class="mw8 center">
     <section class="ph4">
-      The following plugins belong to the {{ .Section | humanize | singularize }} <i>{{ .Title }}</i>.
+      The following plugins belong to the {{ .Section | humanize | singularize | title }} <i>{{ .Title }}</i>.
       <ul>
         {{ range .Data.Pages.ByTitle }}
           <li>

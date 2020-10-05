@@ -793,9 +793,6 @@ class ContentIndexer:
 class MuninPluginsHugoExport:
 
     MISSING_DOCUMENTATION_TEXT = "Sadly there is no documentation for this plugin"
-    # String to be used for tagging in case of unknown values.
-    # (e.g. if the programming language could not be determined)
-    UNKNOWN_PLACEHOLDER = "unknown"
     PLUGINS_SUBDIRECTORY = "plugins"
 
     def __init__(self, hugo_directory, export_directory, baseurl="http://localhost/",
@@ -841,31 +838,44 @@ class MuninPluginsHugoExport:
         result = {
             "title": plugin.name,
         }
+        missing_details = set()
         if plugin.repository_source:
             result["repositories"] = [plugin.repository_source.name]
-        if plugin.documentation:
-            result["documentation_status"] = ["documented"]
-        else:
-            result["documentation_status"] = ["missing documentation"]
         if plugin.changed_timestamp:
             result["date"] = plugin.changed_timestamp.isoformat(timespec="seconds")
         if plugin.summary:
             result["summary"] = plugin.summary
+        else:
+            missing_details.add("summary")
         if plugin.categories:
             result["categories"] = tuple(plugin.categories)
+        else:
+            missing_details.add("categories")
         if plugin.family:
             result["families"] = [plugin.family]
         if plugin.capabilities:
             result["capabilities"] = tuple(plugin.capabilities)
         if plugin.path_keywords:
             result["keywords"] = tuple(sorted(plugin.path_keywords))
-        result["implementation_languages"] = [
-            plugin.implementation_language or self.UNKNOWN_PLACEHOLDER]
+        if plugin.implementation_language:
+            result["implementation_languages"] = [plugin.implementation_language]
+        else:
+            missing_details.add("implementation_language")
         if plugin.documentation:
             result["indexing_content"] = ContentIndexer.get_indexing_content(plugin.documentation)
+        else:
+            missing_details.add("documentation")
         if plugin.authors:
             result["authors"] = tuple(plugin.authors)
-        result["licenses"] = [plugin.license.key if plugin.license else self.UNKNOWN_PLACEHOLDER]
+        else:
+            missing_details.add("author")
+        if not plugin.example_graphs:
+            missing_details.add("example graphs")
+        if plugin.license:
+            result["licenses"] = [plugin.license.key]
+        else:
+            missing_details.add("license")
+        result["missing_details"] = sorted(missing_details)
         return result
 
     @staticmethod

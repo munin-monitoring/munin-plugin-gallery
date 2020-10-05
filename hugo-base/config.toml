@@ -32,13 +32,13 @@ enableRobotsTXT = true
 [taxonomies]
   capability = "capabilities"
   category = "categories"
-  documentation_status = "documentation_status"
   family = "families"
   implementation_language = "implementation_languages"
   keyword = "keywords"
   repository = "repositories"
   author = "authors"
   license = "licenses"
+  missing_detail = "missing_details"
 
 
 [[menu.shortcuts]]
