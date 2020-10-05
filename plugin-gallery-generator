@@ -287,7 +287,9 @@ class MuninPlugin:
     AUTHOR_BARE_NAME_REGEX = re.compile(
         r"^\s*"
         r"(?:(?:.*:|(?:Copyright|Copyleft|copying)(?:\s+\(c\))?|\(c\)|\(\d+\)|contributed by)\s+)?"
-        r"(?:\d+(?:-\d+)?,?\s+)?(?:-\s+)?((?:\w[\w.-]*\s){0,2}\w[\w.-]*?)(?:\s+[\d\-,<\(].*|\.|)?$",
+        r"(?:\d+(?:-\d+)?,?\s+)?(?:-\s+)?"
+        r"((?:\w[\w.-]*\s){0,2}\w[\w.-]*?)"
+        r"(?:\s+[\d\-,<\(].*|\.|)?$",
         flags=re.IGNORECASE)
 
     def __init__(self, plugin_filename, repository_source=None, name=None, language=None,
