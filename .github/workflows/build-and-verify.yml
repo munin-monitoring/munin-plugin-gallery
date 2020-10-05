@@ -19,10 +19,8 @@ jobs:
         run: |
           sudo add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ groovy universe"
           sudo apt-get install --yes --quiet --target-release focal hugo/groovy
-      - name: Build website
-        run: make build
-      - name: Generate metadata
-        run: ./plugin-gallery-generator --skip-website --show-metadata build >build/metadata.yml
+      - name: Build website and metadata
+        run: ./plugin-gallery-generator --show-metadata build >build/metadata.yml
       - name: Analyze the code and spelling
         run: make lint
       - name: Upload static website
