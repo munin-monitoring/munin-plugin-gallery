@@ -15,6 +15,8 @@ You are welcome to [suggest](/contribute/) additional source repositories.
 
 ### Finding a plugin
 
+There are multiple ways to find the plugin you are looking for:
+
 * type a name or keyword into the search field
 * browse through the plugin attributes (in the left sidebar)
 * go through the long list of tags (in the top navigation bar)
