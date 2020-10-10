@@ -435,43 +435,6 @@ class MuninPlugin:
                                     break
                             else:
                                 split_and_maybe_add(result, author_name)
-        if self.repository_source._source_type == RepositorySourceType.GIT:
-            for author in await self._get_git_authors():
-                split_and_maybe_add(result, author)
-        return result
-
-    async def _get_git_authors(self):
-        dirname = os.path.dirname(self.plugin_filename)
-        basename = os.path.basename(self.plugin_filename)
-        try:
-            process = await asyncio.subprocess.create_subprocess_exec(
-                *("git", "--no-pager", "log", "--follow", "--no-merges", "--format=format:%an",
-                  "--", basename),
-                cwd=dirname, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-        except OSError:
-            logging.warning(
-                "Failed to run 'git log' while retrieving the timestamp of '%s'.",
-                self.plugin_filename)
-            return []
-        authors, error_output = await process.communicate()
-        if process.returncode != 0:
-            logging.warning(
-                "Failed to retrieve authors of '%s' via 'git log': %s",
-                self.plugin_filename, error_output.decode())
-            return []
-        result = []
-        # try a few encodings, since "git log" may output non-utf8 characters
-        for encoding in ("utf8", "cp1250"):
-            try:
-                authors = authors.decode(encoding)
-                break
-            except ValueError:
-                pass
-        else:
-            authors = authors.decode(errors="ignore")
-        for line in authors.splitlines():
-            if line not in result:
-                result.append(line)
         return result
 
     @classmethod
