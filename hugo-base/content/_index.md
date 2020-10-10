@@ -27,10 +27,3 @@ There are multiple ways to find the plugin you are looking for:
 You are very welcome to improve the documentation of the existing plugins (in *perldoc* format) and provide additional example graph images to the `contrib` repository. The more descriptive content is there, the more helpful the Plugin Gallery is for all users.
 
 Read [Contribute](/contribute/) for more details.
-
-
-### Graph Categories
-
-To get a clear and user-friendly overview in the plugin gallery (and on Munin WebGUI), we work on reducing the number of categories. Have a look at our list of [well-known-categories](http://guide.munin-monitoring.org/en/latest/reference/graph-category.html?highlight=gallery#well-known-categories), and choose an appropriate category to present your plugin in the gallery.
-
-Users can always change the category to adapt their personal view by changing the plugins sourcecode before distributing it on their servers or by configuration setting on the Munin masters side (`munin.conf`).
