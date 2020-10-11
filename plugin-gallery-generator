@@ -224,7 +224,8 @@ class MuninPlugin:
     # Most plugins contain a description in the first few lines ("NAME - SUMMARY ...").
     # Some irrelevant tokens (e.g. the prefix "Munin Plugin to" or a trailing dot) are ignored.
     SUMMARY_REGEX = re.compile(
-        r"^\w+\s+-\s+(Munin )?((Plugin|Script) )?(to )?(?P<summary>.*?)\.?$", flags=re.IGNORECASE)
+        r"^[\w\-\\]+\s+-\s+(Munin )?((Plugin|Script) )?(to )?(?P<summary>.*?)\.?$",
+        flags=re.IGNORECASE)
     CATEGORY_LINE_BLACKLIST_REGEXES = (
         re.compile(r"(?:label|documentation|\bthe\b|filterwarnings)"),
         # ignore existing ambiguous word combinations
