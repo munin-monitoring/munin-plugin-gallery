@@ -371,7 +371,7 @@ class MuninPlugin:
         # we expect the summary within the first few lines of the documentation
         if not self.documentation:
             return None
-        for line in self.documentation.splitlines()[:8]:
+        for line in self.documentation.splitlines()[:10]:
             match = self.SUMMARY_REGEX.search(line)
             if match:
                 return match.groupdict()["summary"]
