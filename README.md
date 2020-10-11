@@ -25,11 +25,20 @@ The configuration and layout of the exported website uses the content of the dir
 
 See the [Hugo documentation](https://gohugo.io/documentation/) for details.
 
+You can explore the build result locally by running the following command:
+
+```shell
+./plugin-gallery-generator serve
+```
+
 
 # Contribute
 
 You are welcome to contribute to this plugin gallery generator in order to improve the plugin
 parser or details of the generated website.
+
+The following sections include hints regarding specific parts of the build process.
+
 
 ## Website layout
 
@@ -48,7 +57,7 @@ After the first run you may want to omit the plugin collection in order to speed
 
 ## Additional munin plugin sources (repositories)
 
-1. Add an entry o `config.yml`
+1. Add an entry to `config.yml`
 2. *optional*: specify a human-readable name for the repository in `hugo-base/content/repositories`
 3. Test the collection process: `./plugin-gallery-generator --skip-website build`
 4. commit the changes and propose a [pull request](https://github.com/munin-monitoring/munin-plugin-gallery/pulls)
@@ -63,7 +72,7 @@ Adjust the python-based [plugin-gallery-generator](blob/master/plugin-gallery-ge
 rebuild the plugin tree:
 
 ```shell
-./plugin-gallery-generator --skip-website
+./plugin-gallery-generator --skip-website build
 ```
 
 If you want to debug only a few (local) plugins, then you should specify the relevant local
