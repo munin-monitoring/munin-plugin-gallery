@@ -460,18 +460,40 @@ class MuninPlugin:
         # quickly scan the file content in order to skip "perldoc" for files without documentation
         if "=head1" not in self.plugin_code:
             return None
+        if "ruby" in self.plugin_code[:20]:
+            # Ruby's multiline comment format ends with "=end" instead of "=cut".  Sadly there
+            # seems to be no way to embed an "=end" without breaking the ruby interpreting.
+            # Without adding "=cut", the markdown conversion would end with the full plugin code.
+            result_lines = []
+            for line in self.plugin_code.splitlines():
+                if line == "=begin":
+                    # "=begin" is a special string for ruby, but is invalid perlpod syntax, since
+                    # it lacks the format specified.  Thus we replace it with a generic "start"
+                    # marker suitable for perlpod.
+                    result_lines.append("=pod")
+                elif line == "=end":
+                    # The "=end" directive closes a previous "=begin" directive.  It indicates the
+                    # end of the documentation (for ruby).  Thus we replace it with perlpod's
+                    # marker for the end of documentation.
+                    result_lines.append("=cut")
+                else:
+                    result_lines.append(line)
+            plugin_code = os.linesep.join(result_lines)
+        else:
+            plugin_code = self.plugin_code
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                *("perldoc", "-o", "markdown", "-F", "-T", self.plugin_filename),
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                "pod2markdown", stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE)
         except OSError as exc:
             logging.warning("Failed to execute perldoc: {}".format(exc))
             return None
-        await process.wait()
+        stdout, stderr = await process.communicate(plugin_code.encode())
         if process.returncode != 0:
-            logging.info("Failed to generate documentation for plugin '{}'.".format(self.name))
+            logging.info(
+                "Failed to generate documentation for plugin '%s': %s", self.name, stderr.decode())
             return None
-        documentation = (await process.stdout.read()).decode()
+        documentation = stdout.decode()
         # remove empty lines and whitespace and the beginning and end
         documentation = documentation.strip()
         # fix all-uppercase style (e.g. "NAME" -> "Name")
