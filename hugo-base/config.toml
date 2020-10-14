@@ -4,6 +4,7 @@ theme = "ace-documentation"
 
 MetaDataFormat = "yaml"
 enableRobotsTXT = true
+rssLimit = 200
 
 [outputs]
   # enable JSON output for "search" via lunr (see index.json)
