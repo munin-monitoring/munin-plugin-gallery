@@ -3,9 +3,9 @@
   {{.Site.Home.Content}}
   <h2>Recently updated plugins</h2>
   {{ with .Site.GetPage "/plugins/" }}
-    <div class="row" style="float:right">
+    <div class="row row-cols-1 row-cols-md-3">
       {{ range (.Paginator 9).Pages }}
-        <div class="col-sm-4">
+        <div class="col mb-4">
           {{- partial "plugin-summary.html" . -}}
         </div>
       {{ end }}
