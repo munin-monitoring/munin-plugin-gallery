@@ -23,7 +23,7 @@
                    <ul class="list-unstyled ml-2">
                      {{ range $key, $value := $taxonomy }}
                      <li>
-                       {{- $term_page := $.Site.GetPage (printf "/%s/%s/" $taxonomy_name $key) -}}
+                       {{- $term_page := (index (index $.Site.Taxonomies $taxonomy_name) $key).Page -}}
                        <a href="{{ $term_page.Permalink }}" class="nav-link p-0">
                          {{ $term_page.Title }} ({{ $taxonomy.Count $key }})
                        </a>

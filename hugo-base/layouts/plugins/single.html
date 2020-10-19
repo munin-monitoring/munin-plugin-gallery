@@ -3,7 +3,7 @@
 <div class="munin-plugin-overview">
   <dl>
     {{ with .Params.repositories }}
-      {{- $page := $.Site.GetPage (printf "/repositories/%s/" (index . 0)) -}}
+      {{- $page := (index $.Site.Taxonomies.repositories (index . 0)).Page -}}
       <dt>Repository</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
@@ -16,14 +16,14 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := $.Site.GetPage (printf "/categories/%s/" .) -}}
+            {{- $page := (index $.Site.Taxonomies.categories (anchorize .)).Page -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
       </dd>
     {{ end }}
     {{ with .Params.families }}
-      {{- $page := $.Site.GetPage (printf "/families/%s/" (index . 0)) -}}
+      {{- $page := (index $.Site.Taxonomies.families (anchorize (index . 0))).Page -}}
       <dt>Family</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
@@ -32,7 +32,7 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := $.Site.GetPage (printf "/capabilities/%s/" .) -}}
+            {{- $page := (index $.Site.Taxonomies.capabilities (anchorize .)).Page -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
@@ -43,19 +43,19 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := $.Site.GetPage (printf "/keywords/%s/" .) -}}
+            {{- $page := (index $.Site.Taxonomies.keywords (urlize .)).Page -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
       </dd>
     {{ end }}
     {{ with .Params.implementation_languages }}
-      {{- $page := $.Site.GetPage (printf "/implementation_languages/%s/" (index . 0)) -}}
+      {{- $page := (index $.Site.Taxonomies.implementation_languages (anchorize (index . 0))).Page -}}
       <dt>Language</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
     {{ with .Params.licenses }}
-      {{- $page := $.Site.GetPage (printf "/licenses/%s/" (index . 0)) -}}
+      {{- $page := (index $.Site.Taxonomies.licenses (urlize (index . 0))).Page -}}
       <dt>License</dt>
       <dd><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></dd>
     {{ end }}
@@ -64,8 +64,8 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := $.Site.GetPage (printf "/authors/%s/" (urlize .)) -}}
-            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title | default }}</a></li>
+            {{- $page := (default (index $.Site.Taxonomies.authors (anchorize .)) (index $.Site.Taxonomies.authors (urlize .))).Page -}}
+            <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
       </dd>

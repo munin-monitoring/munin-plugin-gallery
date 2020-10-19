@@ -1,6 +1,6 @@
 <div class="card text-center">
-  {{- $repository_page := $.Site.GetPage (printf "/%s/%s/" "repositories" (index .Params.repositories 0) ) -}}
-  {{- $repository_title := $repository_page.Title }}
+  {{- $repository_term := index $.Site.Taxonomies.repositories (index .Params.repositories 0) -}}
+  {{- $repository_title := $repository_term.Page.Title }}
   {{- $change_date := dateFormat "2006-01-02" .Date }}
   <div class="card-header">{{ $repository_title }}</div>
   <div class="card-body">

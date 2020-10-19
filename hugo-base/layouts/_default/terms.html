@@ -15,10 +15,8 @@
       <h1>{{ .Data.Plural | humanize }}</h1>
       <ul>
         {{ range $key, $value := .Data.Terms }}
-          {{- $term_page := $.Site.GetPage (printf "/%s/%s/" $taxonomy_name $key) -}}
-          <li>
-            <a href="{{ $term_page.RelPermalink }}" class="link blue hover-black">{{ $term_page.Title }}</a> ({{ $value.Count }})
-          </li>
+          {{- $page := (default (index (index $.Site.Taxonomies $taxonomy_name) (anchorize $key)) (index (index $.Site.Taxonomies $taxonomy_name) (urlize $key))).Page -}}
+          <li><a href="{{ $page.RelPermalink }}" class="link blue hover-black">{{ $page.Title }}</a> ({{ $value.Count }})</li>
         {{ end }}
       </ul>
     </section>
