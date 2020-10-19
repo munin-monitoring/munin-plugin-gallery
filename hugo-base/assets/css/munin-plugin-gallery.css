@@ -1,3 +1,11 @@
+.main > h1 {
+  padding-bottom: 0.5rem;
+}
+
+.main > h2 {
+  padding-top: inherit;
+}
+
 .munin-example-graph {
   float: right;
   height: 250px;
