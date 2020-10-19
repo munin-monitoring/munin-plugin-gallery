@@ -547,7 +547,7 @@ class MuninPlugin:
             return None
 
     def get_unexpected_categories(self):
-        return self.categories.difference(self.WELL_KNOWN_CATEGORIES)
+        return sorted(set(self.categories).difference(self.WELL_KNOWN_CATEGORIES))
 
     def get_details(self):
         return {
