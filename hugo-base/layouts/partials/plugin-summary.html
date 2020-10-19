@@ -1,0 +1,14 @@
+<div class="card text-center">
+  {{- $repository_page := $.Site.GetPage (printf "/%s/%s/" "repositories" (index .Params.repositories 0) ) -}}
+  {{- $repository_title := $repository_page.Title }}
+  {{- $change_date := dateFormat "2006-01-02" .Date }}
+  <div class="card-header">{{ $repository_title }}</div>
+  <div class="card-body">
+    <h5 class="card-title">{{ .Title }}</h5>
+    <p>{{ $change_date }}</p>
+    <p class="card-text">
+      {{ .Params.Summary | default .Summary | truncate 100 }}
+    </p>
+    <a href="{{ .RelPermalink }}" class="card-link">View Plugin</a>
+  </div>
+</div>

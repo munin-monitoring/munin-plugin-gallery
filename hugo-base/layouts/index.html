@@ -1,0 +1,14 @@
+{{ define "main" }}
+  <h1>{{ .Title }}</h1>
+  {{.Site.Home.Content}}
+  <h2>Recently updated plugins</h2>
+  {{ with .Site.GetPage "/plugins/" }}
+    <div class="row" style="float:right">
+      {{ range (.Paginator 9).Pages }}
+        <div class="col-sm-4">
+          {{- partial "plugin-summary.html" . -}}
+        </div>
+      {{ end }}
+    </div>
+  {{ end }}
+{{ end }}
