@@ -778,7 +778,7 @@ class ContentIndexer:
 
 class MuninPluginsHugoExport:
 
-    MISSING_DOCUMENTATION_TEXT = "Sadly there is no documentation for this plugin"
+    MISSING_DOCUMENTATION_TEXT = "Sadly there is no documentation for this plugin."
     PLUGINS_SUBDIRECTORY = "plugins"
 
     def __init__(self, hugo_directory, export_directory, baseurl="http://localhost/",
@@ -884,7 +884,6 @@ class MuninPluginsHugoExport:
             logging.warning(
                 "Failed to create hugo plugin directory ({}): {}".format(plugin_directory, exc))
             return False
-        documentation = plugin.documentation or self.MISSING_DOCUMENTATION_TEXT
         source_path = os.path.join(plugin_directory, "source")
         shutil.copy(plugin.plugin_filename, source_path)
         self._set_timestamp_of_plugin(source_path, plugin)
@@ -906,7 +905,12 @@ class MuninPluginsHugoExport:
                 meta_data["example_graphs"] = local_graphs
             plugin_file.write(yaml.dump(meta_data, Dumper=YamlDataDumper, indent=4))
             plugin_file.write("---" + os.linesep)
-            plugin_file.write(documentation + os.linesep)
+            if plugin.documentation:
+                plugin_file.write(plugin.documentation + os.linesep)
+            else:
+                plugin_file.write(self.MISSING_DOCUMENTATION_TEXT + os.linesep)
+                # prevent hugo from treating the plugin code as being part of the summary
+                plugin_file.write("<!--more-->" + os.linesep)
             show_source_format_string = """
 {{< collapse title="Source Code" >}}
 {{< code lang="%(language)s" file="/%(path)s" >}}
