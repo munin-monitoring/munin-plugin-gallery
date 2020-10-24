@@ -481,12 +481,19 @@ class MuninPlugin:
             plugin_code = os.linesep.join(result_lines)
         else:
             plugin_code = self.plugin_code
+        # Enforce utf8 input encoding (if no encoding was specified).
+        # Otherwise perldoc would complain about non-utf8 characters.
+        if "=encoding" not in plugin_code:
+            plugin_code = re.sub(
+                r"^=head1", os.linesep.join(("=encoding utf8", "", "=head1")), plugin_code,
+                count=1, flags=re.MULTILINE)
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                "pod2markdown", stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+                *("pod2markdown", "--utf8"),
+                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE)
         except OSError as exc:
-            logging.warning("Failed to execute perldoc: {}".format(exc))
+            logging.warning("Failed to execute pod2markdown: {}".format(exc))
             return None
         stdout, stderr = await process.communicate(plugin_code.encode())
         if process.returncode != 0:
