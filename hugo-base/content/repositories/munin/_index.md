@@ -1,5 +1,7 @@
 ---
 title: Munin (master)
+# source: https://www.color-hex.com/color-palette/99630
+repository_color: "#ffd6d6"
 ---
 
 The `master` branch of the [Munin repository](https://github.com/munin-monitoring/munin) is

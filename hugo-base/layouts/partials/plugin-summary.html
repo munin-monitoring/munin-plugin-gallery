@@ -1,8 +1,9 @@
 <div class="card text-center">
   {{- $repository_term := index $.Site.Taxonomies.repositories (index .Params.repositories 0) -}}
   {{- $repository_title := $repository_term.Page.Title }}
+  {{- $repository_color := $repository_term.Page.Params.repository_color }}
   {{- $change_date := dateFormat "2006-01-02" .Date }}
-  <div class="card-header">{{ $repository_title }}</div>
+  <div class="card-header" style="background-color:{{ $repository_color }}">{{ $repository_title }}</div>
   <div class="card-body">
     <h5 class="card-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h5>
     <p>{{ $change_date }}</p>

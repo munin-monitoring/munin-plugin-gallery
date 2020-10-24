@@ -1,5 +1,7 @@
 ---
 title: Munin (2.0)
+# source: https://www.color-hex.com/color-palette/99630
+repository_color: "#f9fddc"
 ---
 
 The `stable-2.0` branch of the [Munin repository](https://github.com/munin-monitoring/munin) is
