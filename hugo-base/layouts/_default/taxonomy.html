@@ -12,14 +12,14 @@
   </article>
   <div class="mw8 center">
     <section class="ph4">
-      The following plugins belong to the {{ .Section | humanize | singularize | title }} <i>{{ .Title }}</i>.
-      <ul>
-        {{ range .Data.Pages.ByTitle }}
-          <li>
-            <a href="{{ .Permalink}}">{{ .Title }}</a>{{ with .Params.date }} ({{ . | dateFormat "2006-01-02" }}) {{ end }}{{ with .Params.summary }} - {{ . }}{{ end }}
-          </li>
+      The following plugins ({{ (.Paginate .Pages).TotalPages }}) belong to the {{ .Section | humanize | singularize | title }} <i>{{ .Title }}</i>.
+      <div class="row row-cols-1 row-cols-md-3">
+        {{ range .Pages.ByTitle }}
+          <div class="col mb-4">
+            {{- partial "plugin-summary.html" . -}}
+          </div>
         {{ end }}
-      </ul>
+      </div>
     </section>
   </div>
 {{ end }}
