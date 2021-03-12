@@ -2,7 +2,7 @@
 title: Munin Plugin Gallery
 ---
 
-This is the place where you can browse [Munin](https://munin-monitoring.org) plugins from different [sources](/repositories/).
+This is the place where you can browse [Munin](http://munin-monitoring.org) plugins from different [sources](/repositories/).
 
 ## How to find a plugin
 
