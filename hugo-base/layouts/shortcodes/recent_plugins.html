@@ -1,0 +1,11 @@
+{{- $column_count := .Get 0 -}}
+{{- $plugin_count := .Get 1 -}}
+{{ with .Site.GetPage "/plugins/" }}
+  <div class="row row-cols-1 row-cols-md-{{ $column_count }}">
+    {{ range (.Paginator $plugin_count).Pages }}
+      <div class="col mb-4">
+        {{- partial "plugin-summary.html" . -}}
+      </div>
+    {{ end }}
+  </div>
+{{ end }}

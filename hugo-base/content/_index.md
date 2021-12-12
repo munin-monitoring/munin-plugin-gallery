@@ -15,3 +15,8 @@ This is the place where you can browse [Munin](http://munin-monitoring.org) plug
 
 You are very welcome to improve the documentation of the existing plugins (in *perldoc* format) and provide additional example graph images to the `contrib` repository. The more descriptive content is there, the more helpful the Plugin Gallery is for all users.
 Read [Contribute](/contribute/) for more details.
+
+
+## Recently updated plugins
+
+{{< recent_plugins 3 9 >}}
