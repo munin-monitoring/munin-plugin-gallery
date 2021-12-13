@@ -151,11 +151,13 @@ class LicenseParser:
     )
 
     def __init__(self):
-        licenses = {
-            item["licenseId"]: LicenseInformation(
-                item["name"], item["licenseId"], item["seeAlso"][0])
-            for item in self._download_license_data()
-        }
+        licenses = {}
+        for item in self._download_license_data():
+            license_id = item["licenseId"]
+            name = item["name"]
+            references = item["seeAlso"]
+            url = references[0] if references else None
+            licenses[license_id] = LicenseInformation(name, license_id, url)
         regexes = []
         for license in licenses.values():
             regex = re.compile(r"\b{}\b".format(re.escape(license.key)))
