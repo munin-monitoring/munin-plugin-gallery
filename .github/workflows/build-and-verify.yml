@@ -6,7 +6,8 @@ on:
 jobs:
   build-und-verify:
     name: Build and Verify
-    runs-on: ubuntu-20.04
+    # the gallery requires at least hugo 0.73 due to changes regarding taxonomies and terms (i.e. at least Ubuntu 20.04 or Debian Buster)
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -14,11 +15,6 @@ jobs:
           submodules: True
       - name: Install dependencies
         run: sudo apt-get install --yes --quiet codespell git hugo jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml
-      # the gallery requires at least hugo 0.73 due to changes regarding taxonomies and terms
-      - name: Install newer hugo version
-        run: |
-          sudo add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ groovy universe"
-          sudo apt-get install --yes --quiet --target-release focal hugo/groovy
       - name: Build website and metadata
         run: |
           mkdir -p build
