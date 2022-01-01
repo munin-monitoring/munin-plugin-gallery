@@ -35,6 +35,7 @@ lint: $(INDEX_JSON)
 	@# verify the exported JSON format
 	jq . <"$(INDEX_JSON)" >/dev/null
 	python3 -m flake8 "$(GENERATOR_BIN)"
+	black --check "$(GENERATOR_BIN)"
 
 .PHONY: clean
 clean:

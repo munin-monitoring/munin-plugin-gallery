@@ -14,7 +14,7 @@ jobs:
         with:
           submodules: True
       - name: Install dependencies
-        run: sudo apt-get install --yes --quiet codespell git hugo jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml
+        run: sudo apt-get install --yes --quiet black codespell git hugo jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml
       - name: Build website and metadata
         run: |
           mkdir -p build

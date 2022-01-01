@@ -56,9 +56,12 @@ import yaml
 
 
 EXAMPLE_GRAPH_DIRECTORY_NAME = "example-graphs"
-INDEXING_IGNORE_WORDS_FILE = os.path.join(os.path.dirname(__file__), "indexing-ignore-words.txt")
+INDEXING_IGNORE_WORDS_FILE = os.path.join(
+    os.path.dirname(__file__), "indexing-ignore-words.txt"
+)
 SPDX_LICENSE_DATA_URL = (
-    "https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json")
+    "https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json"
+)
 
 
 class RepositorySourceType(enum.Enum):
@@ -68,26 +71,32 @@ class RepositorySourceType(enum.Enum):
 
 
 class YamlDataDumper(yaml.Dumper):
-    """ provide representations for a few non-default data types """
+    """provide representations for a few non-default data types"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_representer(
-            collections.OrderedDict, lambda dumper, data: dumper.represent_dict(data.items()))
+            collections.OrderedDict,
+            lambda dumper, data: dumper.represent_dict(data.items()),
+        )
         self.add_representer(tuple, lambda dumper, data: dumper.represent_list(data))
 
 
-class MuninPluginExampleGraph(collections.namedtuple("MuninPluginExampleGraph", "key filename")):
-
+class MuninPluginExampleGraph(
+    collections.namedtuple("MuninPluginExampleGraph", "key filename")
+):
     def _get_sort_key(self):
-        """ calculate a sorting weight based on the "key"
+        """calculate a sorting weight based on the "key"
 
         The special keys for daily, weekly, monthly and yearly graphs are supposed to appear first.
         Numeric keys follow.
         All other keys are used as sorting keys without further processing.
         """
         try:
-            return ({"day": -4, "weeky": -3, "month": -2, "year": -1}[self.key.lower()], "")
+            return (
+                {"day": -4, "weeky": -3, "month": -2, "year": -1}[self.key.lower()],
+                "",
+            )
         except KeyError:
             pass
         try:
@@ -101,23 +110,25 @@ class MuninPluginExampleGraph(collections.namedtuple("MuninPluginExampleGraph", 
 
 
 class MuninPluginRepositoryProcessingError(IOError):
-    """ any kind of error happened while processing a plugin source"""
+    """any kind of error happened while processing a plugin source"""
 
 
 class ConfigurationImportError(ValueError):
-    """ any kind of data validation problem encountered while processing the configuration file """
+    """any kind of data validation problem encountered while processing the configuration file"""
 
 
 class LicenseInformation(
-        collections.namedtuple("LicenseInformation", ("name", "key", "url"))):
+    collections.namedtuple("LicenseInformation", ("name", "key", "url"))
+):
     pass
 
 
 class LicenseParser:
-    """ Determine the license of a given source code.
+    """Determine the license of a given source code.
 
     TODO: add detection based on non-SPDX keywords
     """
+
     MANUAL_KEYWORD_LICENSE_MAP = (
         ("Public Domain", "GPL-2.0-only"),
         ("GPLv2", "GPL-2.0-only"),
@@ -164,7 +175,9 @@ class LicenseParser:
             regexes.append((regex, 10, license))
             # add optional alias for "*-or-later"
             if license.key.endswith("+"):
-                regex = re.compile(r"\b{}-or-later\b".format(re.escape(license.key[:-1])))
+                regex = re.compile(
+                    r"\b{}-or-later\b".format(re.escape(license.key[:-1]))
+                )
                 regexes.append((regex, 10, license))
             if license.key.endswith("-or-later"):
                 regex = re.compile(r"\b{}\+\b".format(re.escape(license.key[:-9])))
@@ -175,7 +188,9 @@ class LicenseParser:
         # sort regexes by priority (higher first) and length (higher first)
         regexes.sort(key=lambda item: (-item[1], -len(item[0].pattern)))
         # remove priority from list (it was only used for sorting)
-        self.license_regexes = tuple((regex, license) for regex, priority, license in regexes)
+        self.license_regexes = tuple(
+            (regex, license) for regex, priority, license in regexes
+        )
 
     @staticmethod
     def _download_license_data():
@@ -184,20 +199,25 @@ class LicenseParser:
                 raw = download.read()
         except IOError as exc:
             logging.warning(
-                "Failed to download SPDX license data (%s): %s", SPDX_LICENSE_DATA_URL, exc)
+                "Failed to download SPDX license data (%s): %s",
+                SPDX_LICENSE_DATA_URL,
+                exc,
+            )
             return {}
         try:
             data = json.loads(raw)
         except ValueError as exc:
             logging.warning(
-                "Failed to parse SPDX license data (%s): %s", SPDX_LICENSE_DATA_URL, exc)
+                "Failed to parse SPDX license data (%s): %s", SPDX_LICENSE_DATA_URL, exc
+            )
             return {}
         try:
             return data["licenses"]
         except KeyError:
             logging.warning(
                 "Invalid SPDX license data format (%s): missing key 'licenses'",
-                SPDX_LICENSE_DATA_URL)
+                SPDX_LICENSE_DATA_URL,
+            )
             return {}
 
     def parse_code(self, code):
@@ -220,18 +240,23 @@ class MuninPlugin:
     CAPABILITIES_HEADER_REGEX = re.compile(r"^.*#%#\s*capabilities\s*=\s*(.+)$")
     # the following words are just good indicators of capabilities- not a real proof
     CAPABILITIES_INDICATOR_REGEXES = {
-        "multigraph": re.compile(r"\b(need_multigraph|multigraph)\b", flags=re.IGNORECASE),
+        "multigraph": re.compile(
+            r"\b(need_multigraph|multigraph)\b", flags=re.IGNORECASE
+        ),
         "dirtyconfig": re.compile(r"\bMUNIN_CAP_DIRTYCONFIG\b"),
     }
     # Most plugins contain a description in the first few lines ("NAME - SUMMARY ...").
     # Some irrelevant tokens (e.g. the prefix "Munin Plugin to" or a trailing dot) are ignored.
     SUMMARY_REGEX = re.compile(
         r"^[\w\-\\]+\s+-\s+(Munin )?((Plugin|Script) )?(to )?(?P<summary>.*?)\.?$",
-        flags=re.IGNORECASE)
+        flags=re.IGNORECASE,
+    )
     CATEGORY_LINE_BLACKLIST_REGEXES = (
         re.compile(r"(?:label|documentation|\bthe\b|filterwarnings)"),
         # ignore existing ambiguous word combinations
-        re.compile(r"(?:env\.category|/category/|category queries|category\.|force_category)"),
+        re.compile(
+            r"(?:env\.category|/category/|category queries|category\.|force_category)"
+        ),
         # ignore SQL expressions
         re.compile(r"select.*from.*(?:join|where)"),
         # ignore any kind of comments
@@ -240,7 +265,8 @@ class MuninPlugin:
         re.compile(r"category.*[&\$]"),
     )
     CATEGORY_REGEX = re.compile(
-        r"^(?P<line>.*[^$.]category[^\w\n]+(?P<category>\w+).*)$", flags=re.MULTILINE)
+        r"^(?P<line>.*[^$.]category[^\w\n]+(?P<category>\w+).*)$", flags=re.MULTILINE
+    )
     KEYWORDS_REMOVAL_REGEXES = (
         # the munin repository groups plugins by operating system
         re.compile(r"^node\.d\."),
@@ -251,11 +277,49 @@ class MuninPlugin:
     )
     # http://guide.munin-monitoring.org/en/latest/reference/graph-category.html#well-known-categories
     WELL_KNOWN_CATEGORIES = {
-        "1sec", "antivirus", "appserver", "auth", "backup", "chat", "cloud", "cms", "cpu", "db",
-        "devel", "disk", "dns", "filetransfer", "forum", "fs", "fw", "games", "htc",
-        "loadbalancer", "mail", "mailinglist", "memory", "munin", "network", "other", "printing",
-        "processes", "radio", "san", "search", "security", "sensors", "spamfilter", "streaming",
-        "system", "time", "tv", "virtualization", "voip", "webserver", "wiki", "wireless",
+        "1sec",
+        "antivirus",
+        "appserver",
+        "auth",
+        "backup",
+        "chat",
+        "cloud",
+        "cms",
+        "cpu",
+        "db",
+        "devel",
+        "disk",
+        "dns",
+        "filetransfer",
+        "forum",
+        "fs",
+        "fw",
+        "games",
+        "htc",
+        "loadbalancer",
+        "mail",
+        "mailinglist",
+        "memory",
+        "munin",
+        "network",
+        "other",
+        "printing",
+        "processes",
+        "radio",
+        "san",
+        "search",
+        "security",
+        "sensors",
+        "spamfilter",
+        "streaming",
+        "system",
+        "time",
+        "tv",
+        "virtualization",
+        "voip",
+        "webserver",
+        "wiki",
+        "wireless",
     }
     # the list of mappings is ordered
     IMPLEMENTATION_LANGUAGE_REGEXES = {
@@ -283,8 +347,11 @@ class MuninPlugin:
     COPYRIGHT_REGEX = re.compile(
         r"^.{0,15}(?:Copyright|Copyleft|copying|\(c\)|Author:)(?:\s+\(c\))?(?:\s+\d+(?:-\d+)?,?)?"
         r"(?:\s+-)?\s+((?:\w[\w.-]*\s){0,2}\w[\w.-]*?)(?:,.*|\s+[\d\-,<\(].*|\.|)$",
-        flags=re.IGNORECASE)
-    AUTHOR_HEADING_START_REGEX = re.compile(r"^=head1 (AUTHORS?|COPYRIGHT)$", flags=re.IGNORECASE)
+        flags=re.IGNORECASE,
+    )
+    AUTHOR_HEADING_START_REGEX = re.compile(
+        r"^=head1 (AUTHORS?|COPYRIGHT)$", flags=re.IGNORECASE
+    )
     AUTHOR_HEADING_END_REGEX = re.compile(r"^=(head|cut)", flags=re.IGNORECASE)
     # we expect up to three name components - anything else is probably a textual description
     AUTHOR_BARE_NAME_REGEX = re.compile(
@@ -293,17 +360,24 @@ class MuninPlugin:
         r"(?:\d+(?:-\d+)?,?\s+)?(?:-\s+)?"
         r"((?:\w[\w.-]*\s){0,2}\w[\w.-]*?)"
         r"(?:\s+[\d\-,<\(].*|\.|)?$",
-        flags=re.IGNORECASE)
+        flags=re.IGNORECASE,
+    )
 
-    def __init__(self, plugin_filename, repository_source=None, name=None, language=None,
-                 license_parser=None):
+    def __init__(
+        self,
+        plugin_filename,
+        repository_source=None,
+        name=None,
+        language=None,
+        license_parser=None,
+    ):
         self.plugin_filename = plugin_filename
         self.repository_source = repository_source
         self.name = os.path.basename(plugin_filename) if name is None else name
         self.implementation_language = language
         for suffix in self.OPTIONAL_PLUGIN_FILENAME_SUFFIXES:
             if self.name.endswith(suffix):
-                self.name = self.name[:-len(suffix)]
+                self.name = self.name[: -len(suffix)]
         self.example_graphs = self._find_images()
         self.license_parser = license_parser
         self._is_initialized = False
@@ -311,8 +385,11 @@ class MuninPlugin:
     def _find_images(self):
         example_graphs = []
         example_graph_directory = os.path.join(
-            os.path.dirname(self.plugin_filename), EXAMPLE_GRAPH_DIRECTORY_NAME)
-        example_graph_filename_pattern = re.compile(self.name + self.EXAMPLE_GRAPH_SUFFIX_REGEX)
+            os.path.dirname(self.plugin_filename), EXAMPLE_GRAPH_DIRECTORY_NAME
+        )
+        example_graph_filename_pattern = re.compile(
+            self.name + self.EXAMPLE_GRAPH_SUFFIX_REGEX
+        )
         try:
             graph_filenames = os.listdir(example_graph_directory)
         except OSError:
@@ -321,8 +398,11 @@ class MuninPlugin:
             match = example_graph_filename_pattern.match(graph_filename)
             if match:
                 image_key = match.groups()[0]
-                example_graphs.append(MuninPluginExampleGraph(
-                    image_key, os.path.join(example_graph_directory, graph_filename)))
+                example_graphs.append(
+                    MuninPluginExampleGraph(
+                        image_key, os.path.join(example_graph_directory, graph_filename)
+                    )
+                )
         example_graphs.sort()
         return example_graphs
 
@@ -336,8 +416,11 @@ class MuninPlugin:
             self.capabilities = self._parse_capabilities()
             self.categories = self._parse_categories()
             if self.repository_source:
-                self.changed_timestamp = await self.repository_source.get_file_timestamp(
-                    self.plugin_filename)
+                self.changed_timestamp = (
+                    await self.repository_source.get_file_timestamp(
+                        self.plugin_filename
+                    )
+                )
             else:
                 self.changed_timestamp = None
             self.path_keywords = tuple(self._get_keywords())
@@ -350,8 +433,7 @@ class MuninPlugin:
 
     @classmethod
     def _preprocess_raw_code(cls, raw_code):
-        """ replace specific patterns (e.g. the pre-substituted shebangs for munin-2.0 plugins)
-        """
+        """replace specific patterns (e.g. the pre-substituted shebangs for munin-2.0 plugins)"""
         result = raw_code
         for pattern, replacement in cls.PREPROCESSING_SHEBANG_SUBSTITUTIONS:
             result = pattern.sub(replacement, result)
@@ -360,7 +442,8 @@ class MuninPlugin:
     def _get_keywords(self):
         if self.repository_source:
             relative_path = self.repository_source.get_relative_path(
-                os.path.dirname(self.plugin_filename))
+                os.path.dirname(self.plugin_filename)
+            )
         else:
             relative_path = ""
         for token in relative_path.lower().split(os.path.sep):
@@ -382,8 +465,7 @@ class MuninPlugin:
 
     async def _guess_authors(self):
         def split_and_maybe_add(result, text):
-            """ split the text into into multiple authors and add new authors to the "result" list
-            """
+            """split the text into into multiple authors and add new authors to the list"""
             tokens = [text]
             for tokenizer in (",", "/", " and "):
                 new_tokens = []
@@ -397,7 +479,7 @@ class MuninPlugin:
                 token = token.strip(".")
                 for ignore_suffix in [" and others", ", changed by me"]:
                     if token.endswith(ignore_suffix):
-                        token = token[:-len(ignore_suffix)]
+                        token = token[: -len(ignore_suffix)]
                 if token in {"HOLDERS BE LIABLE FOR ANY CLAIM", "LICENSE", "Copyright"}:
                     # ignore misleading terms following the word "COPYRIGHT"
                     pass
@@ -412,6 +494,7 @@ class MuninPlugin:
                     pass
                 else:
                     result.append(token)
+
         result = []
         is_in_author_header = False
         for line in self.plugin_code.splitlines():
@@ -432,8 +515,15 @@ class MuninPlugin:
                         author_name = match.groups()[0].strip()
                         if author_name not in result:
                             for item in (
-                                    "known", "contribut", "bears no resemblance", "license",
-                                    "all rights reserved", "left join", "linpro as", "_"):
+                                "known",
+                                "contribut",
+                                "bears no resemblance",
+                                "license",
+                                "all rights reserved",
+                                "left join",
+                                "linpro as",
+                                "_",
+                            ):
                                 if item in author_name.lower():
                                     break
                             else:
@@ -442,7 +532,7 @@ class MuninPlugin:
 
     @classmethod
     def _rewrite_match_capitalization(cls, match):
-        """ downgrade the capitalization of each word of the match """
+        """downgrade the capitalization of each word of the match"""
         result = []
         for token in match.groups()[0].split():
             if token.upper() in cls.CAPITALIZATION_UPPER:
@@ -458,7 +548,7 @@ class MuninPlugin:
         return " ".join(result)
 
     async def _parse_documentation(self):
-        """ parse the documentation and return a markdown formatted text """
+        """parse the documentation and return a markdown formatted text"""
         # quickly scan the file content in order to skip "perldoc" for files without documentation
         if "=head1" not in self.plugin_code:
             return None
@@ -487,26 +577,37 @@ class MuninPlugin:
         # Otherwise perldoc would complain about non-utf8 characters.
         if "=encoding" not in plugin_code:
             plugin_code = re.sub(
-                r"^=head1", os.linesep.join(("=encoding utf8", "", "=head1")), plugin_code,
-                count=1, flags=re.MULTILINE)
+                r"^=head1",
+                os.linesep.join(("=encoding utf8", "", "=head1")),
+                plugin_code,
+                count=1,
+                flags=re.MULTILINE,
+            )
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
                 *("pod2markdown", "--utf8"),
-                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE)
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
         except OSError as exc:
             logging.warning("Failed to execute pod2markdown: {}".format(exc))
             return None
         stdout, stderr = await process.communicate(plugin_code.encode())
         if process.returncode != 0:
             logging.info(
-                "Failed to generate documentation for plugin '%s': %s", self.name, stderr.decode())
+                "Failed to generate documentation for plugin '%s': %s",
+                self.name,
+                stderr.decode(),
+            )
             return None
         documentation = stdout.decode()
         # remove empty lines and whitespace and the beginning and end
         documentation = documentation.strip()
         # fix all-uppercase style (e.g. "NAME" -> "Name")
-        documentation = self.HEADING_REGEX.sub(self._rewrite_match_capitalization, documentation)
+        documentation = self.HEADING_REGEX.sub(
+            self._rewrite_match_capitalization, documentation
+        )
         # reduce the level of all headings (the template applies level 1 to the plugin title)
         documentation = re.sub(r"^#", "##", documentation, flags=re.MULTILINE)
         # TODO: add some post-processing
@@ -541,8 +642,10 @@ class MuninPlugin:
         for line, category in self.CATEGORY_REGEX.findall(self.plugin_code):
             if len(line.splitlines()) != 1:
                 continue
-            if any(blacklist_regex.search(line)
-                   for blacklist_regex in self.CATEGORY_LINE_BLACKLIST_REGEXES):
+            if any(
+                blacklist_regex.search(line)
+                for blacklist_regex in self.CATEGORY_LINE_BLACKLIST_REGEXES
+            ):
                 continue
             categories.add(category.lower())
         return tuple(sorted(categories))
@@ -574,15 +677,22 @@ class MuninPlugin:
     def __str__(self):
         if self._image_filenames:
             return "Plugin '{:s}' ({:d} example graphs)".format(
-                self.name, len(self._image_filenames))
+                self.name, len(self._image_filenames)
+            )
         else:
             return "Plugin '{:s}'".format(self.name)
 
 
 class MuninPluginSource:
-
-    def __init__(self, name, source_type, location, git_branch=None, source_path=None,
-                 ignore_files=None):
+    def __init__(
+        self,
+        name,
+        source_type,
+        location,
+        git_branch=None,
+        source_path=None,
+        ignore_files=None,
+    ):
         self.name = name
         self._source_type = source_type
         self._source_location = location
@@ -596,13 +706,21 @@ class MuninPluginSource:
             self._extract_directory = tempfile.mkdtemp(prefix="munin-gallery-")
             if self._source_type == RepositorySourceType.GIT:
                 self._plugins_directory = await self._import_git_repository(
-                    self._extract_directory, self._source_location, self._branch,
-                    path=self._filter_path)
+                    self._extract_directory,
+                    self._source_location,
+                    self._branch,
+                    path=self._filter_path,
+                )
             elif self._source_type == RepositorySourceType.ARCHIVE:
                 self._plugins_directory = await self._import_archive(
-                    self._extract_directory, self._source_location, path=self._filter_path)
+                    self._extract_directory,
+                    self._source_location,
+                    path=self._filter_path,
+                )
             elif self._source_type == RepositorySourceType.DIRECTORY:
-                self._plugins_directory = os.path.join(self._source_location, self._filter_path)
+                self._plugins_directory = os.path.join(
+                    self._source_location, self._filter_path
+                )
             else:
                 raise ValueError("Invalid source type: {}".format(self._source_type))
             self._is_downloaded = True
@@ -615,27 +733,47 @@ class MuninPluginSource:
             self._is_downloaded = False
 
     async def _get_git_file_timestamp(self, filename):
-        """ retrieve the timestamp of the most recent commit affecting the filename """
+        """retrieve the timestamp of the most recent commit affecting the filename"""
         dirname, basename = os.path.dirname(filename), os.path.basename(filename)
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                *("git", "log", "-n", "1", "--no-merges", "--format=format:%aI", "--", basename),
-                cwd=dirname, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                *(
+                    "git",
+                    "log",
+                    "-n",
+                    "1",
+                    "--no-merges",
+                    "--format=format:%aI",
+                    "--",
+                    basename,
+                ),
+                cwd=dirname,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
         except OSError:
             logging.warning(
-                "Failed to run 'git log' while retrieving the timestamp of '{}'.".format(filename))
+                "Failed to run 'git log' while retrieving the timestamp of '{}'.".format(
+                    filename
+                )
+            )
             return None
         timestamp_raw, error_output = await process.communicate()
         if process.returncode != 0:
             logging.warning(
-                "Failed to retrieve the timestamp of '{}' via 'git log': {}"
-                .format(filename, error_output.decode()))
+                "Failed to retrieve the timestamp of '{}' via 'git log': {}".format(
+                    filename, error_output.decode()
+                )
+            )
             return None
         try:
             return datetime.datetime.fromisoformat(timestamp_raw.decode())
         except ValueError:
             logging.warning(
-                "Failed to parse file timestamp of '{}': {}".format(filename, timestamp_raw))
+                "Failed to parse file timestamp of '{}': {}".format(
+                    filename, timestamp_raw
+                )
+            )
             return None
 
     async def get_file_timestamp(self, filename):
@@ -651,25 +789,38 @@ class MuninPluginSource:
             raise ValueError("Invalid source type: {}".format(self._source_type))
 
     @staticmethod
-    async def _import_git_repository(target_directory, repository_url, branch, path=None):
+    async def _import_git_repository(
+        target_directory, repository_url, branch, path=None
+    ):
         if path.rstrip(os.path.sep) == os.path.curdir:
             path = None
         try:
             # we cannot use "--depth=1", since we are interested in the file timestamps
             process = await asyncio.subprocess.create_subprocess_exec(
-                *("git", "clone", "--single-branch", "--branch", branch,
-                  repository_url, target_directory),
-                stderr=asyncio.subprocess.PIPE)
+                *(
+                    "git",
+                    "clone",
+                    "--single-branch",
+                    "--branch",
+                    branch,
+                    repository_url,
+                    target_directory,
+                ),
+                stderr=asyncio.subprocess.PIPE,
+            )
         except OSError as exc:
             raise MuninPluginRepositoryProcessingError(
-                "Failed to spawn process for repository retrieval (git): {}" .format(exc))
+                "Failed to spawn process for repository retrieval (git): {}".format(exc)
+            )
         await process.wait()
         if process.returncode == 0:
             return os.path.join(target_directory, path) if path else target_directory
         else:
             raise MuninPluginRepositoryProcessingError(
-                "Failed to extract source archive ({}): {}"
-                .format(repository_url, (await process.stderr.read()).decode()))
+                "Failed to extract source archive ({}): {}".format(
+                    repository_url, (await process.stderr.read()).decode()
+                )
+            )
 
     @staticmethod
     async def _import_archive(target_directory, archive_url, path=None):
@@ -678,16 +829,26 @@ class MuninPluginSource:
         # Strip the top-level path before extracting. Github assembles the name of this path
         # component by combining the repository name and the branch name.
         extract_command = [
-            "tar", "--extract", "--gzip", "--strip-components=1", "--directory", target_directory]
+            "tar",
+            "--extract",
+            "--gzip",
+            "--strip-components=1",
+            "--directory",
+            target_directory,
+        ]
         if path:
             # extract the specified path and ignore the top-level directory of github's archive
             extract_command.extend(["--wildcards", os.path.join("*", path)])
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                *extract_command, stdin=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                *extract_command,
+                stdin=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
         except OSError as exc:
             raise MuninPluginRepositoryProcessingError(
-                "Failed to spawn process for archival extraction (tar): {}" .format(exc))
+                "Failed to spawn process for archival extraction (tar): {}".format(exc)
+            )
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(archive_url) as response:
@@ -700,24 +861,34 @@ class MuninPluginSource:
                     process.stdin.close()
         except IOError as exc:
             raise MuninPluginRepositoryProcessingError(
-                "Failed to download source archive from '{}': {}'".format(archive_url, exc))
+                "Failed to download source archive from '{}': {}'".format(
+                    archive_url, exc
+                )
+            )
         await process.wait()
         if process.returncode == 0:
             return os.path.join(target_directory, path if path else os.path.curdir)
         else:
             raise MuninPluginRepositoryProcessingError(
-                "Failed to extract source archive ({}): {}"
-                .format(archive_url, (await process.stderr.read()).decode()))
+                "Failed to extract source archive ({}): {}".format(
+                    archive_url, (await process.stderr.read()).decode()
+                )
+            )
 
     async def get_plugins(self, license_parser=None):
         await self.initialize()
         for dirpath, dirnames, filenames in os.walk(self._plugins_directory):
-            if os.path.basename(dirpath) in {EXAMPLE_GRAPH_DIRECTORY_NAME, "node.d.debug"}:
+            if os.path.basename(dirpath) in {
+                EXAMPLE_GRAPH_DIRECTORY_NAME,
+                "node.d.debug",
+            }:
                 # example graph directories are not expected to contain plugins
                 continue
             for filename in filenames:
                 full_path = os.path.join(dirpath, filename)
-                relative_path = str(pathlib.Path(full_path).relative_to(self._plugins_directory))
+                relative_path = str(
+                    pathlib.Path(full_path).relative_to(self._plugins_directory)
+                )
                 if relative_path in self._ignore_files:
                     continue
                 try:
@@ -730,16 +901,27 @@ class MuninPluginSource:
                 elif filename.endswith(".in"):
                     # the plugin files in the stable-2.0 repository are not executable
                     yield MuninPlugin(
-                        full_path, repository_source=self, name=filename[:-3],
-                        license_parser=license_parser)
+                        full_path,
+                        repository_source=self,
+                        name=filename[:-3],
+                        license_parser=license_parser,
+                    )
                 elif filename.endswith(".c"):
                     yield MuninPlugin(
-                        full_path, repository_source=self, name=filename[:-2], language="c",
-                        license_parser=license_parser)
+                        full_path,
+                        repository_source=self,
+                        name=filename[:-2],
+                        language="c",
+                        license_parser=license_parser,
+                    )
                 elif filename.endswith(".cpp"):
                     yield MuninPlugin(
-                        full_path, repository_source=self, name=filename[:-4], language="cpp",
-                        license_parser=license_parser)
+                        full_path,
+                        repository_source=self,
+                        name=filename[:-4],
+                        language="cpp",
+                        license_parser=license_parser,
+                    )
                 else:
                     # this file is probably not a plugin
                     pass
@@ -749,7 +931,7 @@ class MuninPluginSource:
 
 
 class ContentIndexer:
-    """ a trivial content indexer for reducing the given text to a minimal set of words
+    """a trivial content indexer for reducing the given text to a minimal set of words
 
     Specific lines, special characters and superfluous whitespace is removed.
     """
@@ -760,8 +942,10 @@ class ContentIndexer:
         # Remove common (very unspecific) words.  These words are parsed from a separate file.
         re.compile(
             r"\b({})\b".format(
-                "|".join(open(INDEXING_IGNORE_WORDS_FILE, "r").read().splitlines())),
-            flags=re.IGNORECASE),
+                "|".join(open(INDEXING_IGNORE_WORDS_FILE, "r").read().splitlines())
+            ),
+            flags=re.IGNORECASE,
+        ),
         # remove single-letter words/digits and dots
         re.compile(r"\b(\.+|\w)\b", flags=re.IGNORECASE),
         # remove all special characters
@@ -790,8 +974,14 @@ class MuninPluginsHugoExport:
     MISSING_DOCUMENTATION_TEXT = "Sadly there is no documentation for this plugin."
     PLUGINS_SUBDIRECTORY = "plugins"
 
-    def __init__(self, hugo_directory, export_directory, baseurl="http://localhost/",
-                 hugo_environment="production", clean_export_directory=True):
+    def __init__(
+        self,
+        hugo_directory,
+        export_directory,
+        baseurl="http://localhost/",
+        hugo_environment="production",
+        clean_export_directory=True,
+    ):
         self._hugo_directory = hugo_directory
         self._baseurl = baseurl
         self._hugo_environment = hugo_environment
@@ -802,7 +992,13 @@ class MuninPluginsHugoExport:
                 shutil.rmtree(self._export_directory)
 
     async def _run_hugo(self, action=None, hide_output=True):
-        call_args = ["hugo", "--baseURL", self._baseurl, "--environment", self._hugo_environment]
+        call_args = [
+            "hugo",
+            "--baseURL",
+            self._baseurl,
+            "--environment",
+            self._hugo_environment,
+        ]
         if action:
             call_args.append(action)
         call_kwargs = {}
@@ -810,8 +1006,11 @@ class MuninPluginsHugoExport:
             call_kwargs["stdout"] = asyncio.subprocess.PIPE
         try:
             process = await asyncio.subprocess.create_subprocess_exec(
-                *call_args, **call_kwargs,
-                cwd=self._hugo_directory, stderr=asyncio.subprocess.PIPE)
+                *call_args,
+                **call_kwargs,
+                cwd=self._hugo_directory,
+                stderr=asyncio.subprocess.PIPE,
+            )
         except OSError as exc:
             logging.error("Failed to run 'hugo': {}".format(exc))
             return False
@@ -820,7 +1019,10 @@ class MuninPluginsHugoExport:
             return True
         else:
             logging.error(
-                "Failed to build hugo site: {}".format((await process.stderr.read()).decode()))
+                "Failed to build hugo site: {}".format(
+                    (await process.stderr.read()).decode()
+                )
+            )
             return False
 
     async def build(self):
@@ -857,7 +1059,9 @@ class MuninPluginsHugoExport:
         else:
             missing_details.add("implementation_language")
         if plugin.documentation:
-            result["indexing_content"] = ContentIndexer.get_indexing_content(plugin.documentation)
+            result["indexing_content"] = ContentIndexer.get_indexing_content(
+                plugin.documentation
+            )
         else:
             missing_details.add("documentation")
         if plugin.authors:
@@ -884,14 +1088,18 @@ class MuninPluginsHugoExport:
     async def export_plugin(self, plugin):
         if plugin.repository_source:
             plugin_directory = os.path.join(
-                self._export_directory, plugin.repository_source.name, plugin.name)
+                self._export_directory, plugin.repository_source.name, plugin.name
+            )
         else:
             plugin_directory = os.path.join(self._export_directory, plugin.name)
         try:
             os.makedirs(plugin_directory, exist_ok=True)
         except OSError as exc:
             logging.warning(
-                "Failed to create hugo plugin directory ({}): {}".format(plugin_directory, exc))
+                "Failed to create hugo plugin directory ({}): {}".format(
+                    plugin_directory, exc
+                )
+            )
             return False
         source_path = os.path.join(plugin_directory, "source")
         shutil.copy(plugin.plugin_filename, source_path)
@@ -899,13 +1107,16 @@ class MuninPluginsHugoExport:
         local_graphs = []
         for graph in plugin.example_graphs:
             destination = os.path.join(
-                plugin_directory, graph.key + os.path.splitext(graph.filename)[1])
+                plugin_directory, graph.key + os.path.splitext(graph.filename)[1]
+            )
             shutil.copy(graph.filename, destination)
             self._set_timestamp_of_plugin(destination, plugin)
-            local_graphs.append({
-                "key": graph.key,
-                "path": os.path.basename(destination),
-            })
+            local_graphs.append(
+                {
+                    "key": graph.key,
+                    "path": os.path.basename(destination),
+                }
+            )
         export_filename = os.path.join(plugin_directory, "index.md")
         with open(export_filename, "w") as plugin_file:
             plugin_file.write("---" + os.linesep)
@@ -925,36 +1136,52 @@ class MuninPluginsHugoExport:
 {{< code lang="%(language)s" file="/%(path)s" >}}
 {{< /collapse >}}
 """
-            plugin_file.write(show_source_format_string % {
-                "language": plugin.implementation_language or "",
-                "path": os.path.join(
-                    self.PLUGINS_SUBDIRECTORY,
-                    *pathlib.Path(source_path).relative_to(self._export_directory).parts),
-            })
+            plugin_file.write(
+                show_source_format_string
+                % {
+                    "language": plugin.implementation_language or "",
+                    "path": os.path.join(
+                        self.PLUGINS_SUBDIRECTORY,
+                        *pathlib.Path(source_path)
+                        .relative_to(self._export_directory)
+                        .parts,
+                    ),
+                }
+            )
         self._set_timestamp_of_plugin(export_filename, plugin)
         self._set_timestamp_of_plugin(plugin_directory, plugin)
 
     def get_statistics(self):
         return {
             "all": len(self.plugins),
-            "missing_documentation": len([p for p in self.plugins if not p.documentation]),
+            "missing_documentation": len(
+                [p for p in self.plugins if not p.documentation]
+            ),
             "missing_family": len([p for p in self.plugins if not p.family]),
-            "missing_capabilities": len([p for p in self.plugins if not p.capabilities]),
+            "missing_capabilities": len(
+                [p for p in self.plugins if not p.capabilities]
+            ),
             "missing_summary": len([p for p in self.plugins if not p.summary]),
             # TODO: evaluate
-            "unexpected_categories": len([p for p in self.plugins
-                                          if p.get_unexpected_categories()]),
+            "unexpected_categories": len(
+                [p for p in self.plugins if p.get_unexpected_categories()]
+            ),
         }
 
 
-async def import_plugin_source_archive(plugin_source, plugin_queue, license_parser=None):
+async def import_plugin_source_archive(
+    plugin_source, plugin_queue, license_parser=None
+):
     try:
         async for plugin in plugin_source.get_plugins(license_parser=license_parser):
             logging.info("Adding plugin '{}'".format(plugin.name))
             await plugin_queue.put(plugin)
     except Exception as exc:
-        logging.error("Failed to import plugin source archive ({}): {}"
-                      .format(plugin_source.name, exc))
+        logging.error(
+            "Failed to import plugin source archive ({}): {}".format(
+                plugin_source.name, exc
+            )
+        )
 
 
 async def worker_initialize_plugins(jobs, destination):
@@ -963,14 +1190,20 @@ async def worker_initialize_plugins(jobs, destination):
         try:
             await plugin.initialize()
         except Exception as exc:
-            logging.warning("Failed to initialize plugin ({}): {}".format(plugin.name, exc))
+            logging.warning(
+                "Failed to initialize plugin ({}): {}".format(plugin.name, exc)
+            )
             import traceback
+
             logging.warning(traceback.format_exc())
         else:
             pending_count = jobs.qsize()
             done_count = destination.qsize()
-            logging.info("[{:d}/{:d}] Plugin '{}' finished"
-                         .format(done_count, pending_count + done_count, plugin.name))
+            logging.info(
+                "[{:d}/{:d}] Plugin '{}' finished".format(
+                    done_count, pending_count + done_count, plugin.name
+                )
+            )
             await destination.put(plugin)
         finally:
             jobs.task_done()
@@ -993,11 +1226,16 @@ async def import_plugins(plugin_sources, initialized_plugins):
     license_parser = LicenseParser()
     for source in plugin_sources:
         task = asyncio.create_task(
-            import_plugin_source_archive(source, pending_plugins, license_parser=license_parser))
+            import_plugin_source_archive(
+                source, pending_plugins, license_parser=license_parser
+            )
+        )
         plugin_source_workers.append(task)
     plugin_workers = []
     for _ in range(multiprocessing.cpu_count()):
-        task = asyncio.create_task(worker_initialize_plugins(pending_plugins, initialized_plugins))
+        task = asyncio.create_task(
+            worker_initialize_plugins(pending_plugins, initialized_plugins)
+        )
         plugin_workers.append(task)
     await asyncio.gather(*plugin_source_workers, return_exceptions=True)
     await pending_plugins.join()
@@ -1046,12 +1284,19 @@ async def import_local_plugins(plugin_filenames):
 
 
 async def publish_plugins_hugo(
-        plugin_sources, export, skip_collect=False, skip_website=False, show_statistics=False):
+    plugin_sources,
+    export,
+    skip_collect=False,
+    skip_website=False,
+    show_statistics=False,
+):
     timing_statistics = []
     if not skip_collect:
         start_time = time.monotonic()
         loaded_plugins = asyncio.Queue()
-        worker = asyncio.create_task(worker_export_plugins_to_hugo(export, loaded_plugins))
+        worker = asyncio.create_task(
+            worker_export_plugins_to_hugo(export, loaded_plugins)
+        )
         await import_plugins(plugin_sources, loaded_plugins)
         worker.cancel()
         timing_statistics.append(("Collect Plugins", time.monotonic() - start_time))
@@ -1077,29 +1322,59 @@ class CommandLineAction(enum.Enum):
 def get_arguments():
     base_dir = os.path.dirname(__file__)
     parser = argparse.ArgumentParser(
-        description=("Collect munin plugins from different sources and build a static website for "
-                     "visualizing these plugins."))
-    parser.add_argument("--target-plugin-directory",
-                        default=os.path.join(base_dir, "build", "plugins"),
-                        help="Target directory for plugin collection")
-    parser.add_argument("--template-directory", default=os.path.join(base_dir, "hugo-base"),
-                        help="Directory of the website template (hugo)")
-    parser.add_argument("--export-url", default=None,
-                        help="Override the base URL given in the configuration file")
-    parser.add_argument("--skip-collect", action="store_true", help="Skip the plugin collection")
-    parser.add_argument("--skip-website", action="store_true",
-                        help="Skip the website build process")
-    parser.add_argument("--show-statistics", action="store_true",
-                        help="Output various statistics after the build process")
-    parser.add_argument("--show-metadata", action="store_true",
-                        help="Output the metadata of all plugins")
-    parser.add_argument("--plugin", dest="plugin_filenames", action="append", default=[],
-                        help="Process only a single plugin instead of all configured sources")
-    parser.add_argument("--config", default="config.yml",
-                        help="Location of the configuration file")
-    parser.add_argument("action", choices=tuple(item.value for item in CommandLineAction),
-                        default=CommandLineAction.BUILD.value, nargs="?",
-                        help="Action to executed")
+        description=(
+            "Collect munin plugins from different sources and build a static website for "
+            "visualizing these plugins."
+        )
+    )
+    parser.add_argument(
+        "--target-plugin-directory",
+        default=os.path.join(base_dir, "build", "plugins"),
+        help="Target directory for plugin collection",
+    )
+    parser.add_argument(
+        "--template-directory",
+        default=os.path.join(base_dir, "hugo-base"),
+        help="Directory of the website template (hugo)",
+    )
+    parser.add_argument(
+        "--export-url",
+        default=None,
+        help="Override the base URL given in the configuration file",
+    )
+    parser.add_argument(
+        "--skip-collect", action="store_true", help="Skip the plugin collection"
+    )
+    parser.add_argument(
+        "--skip-website", action="store_true", help="Skip the website build process"
+    )
+    parser.add_argument(
+        "--show-statistics",
+        action="store_true",
+        help="Output various statistics after the build process",
+    )
+    parser.add_argument(
+        "--show-metadata",
+        action="store_true",
+        help="Output the metadata of all plugins",
+    )
+    parser.add_argument(
+        "--plugin",
+        dest="plugin_filenames",
+        action="append",
+        default=[],
+        help="Process only a single plugin instead of all configured sources",
+    )
+    parser.add_argument(
+        "--config", default="config.yml", help="Location of the configuration file"
+    )
+    parser.add_argument(
+        "action",
+        choices=tuple(item.value for item in CommandLineAction),
+        default=CommandLineAction.BUILD.value,
+        nargs="?",
+        help="Action to executed",
+    )
     return parser.parse_args()
 
 
@@ -1109,13 +1384,17 @@ def load_configuration_file(filename):
             content = stream.read()
     except IOError as exc:
         raise ConfigurationImportError(
-            "Failed to read configuration file: {}".format(exc))
+            "Failed to read configuration file: {}".format(exc)
+        )
     data = yaml.safe_load(content)
     # verify existence of required keys
-    for key in ("sources", ):
+    for key in ("sources",):
         if key not in data:
             raise RepositorySourceType(
-                "Missing required key 'sources' in configuration file: {}".format(filename))
+                "Missing required key 'sources' in configuration file: {}".format(
+                    filename
+                )
+            )
             return None
     return data
 
@@ -1126,16 +1405,20 @@ def _parse_sources_from_configuration(source_configurations):
         for required_key in ("name", "type", "location"):
             if required_key not in source_settings:
                 raise ConfigurationImportError(
-                    "Missing key '{}' in source #{:d}".format(required_key, index))
+                    "Missing key '{}' in source #{:d}".format(required_key, index)
+                )
         # translate some input setting names (only for undesired variable names)
         source_type = source_settings.pop("type")
         try:
             source_settings["source_type"] = RepositorySourceType(source_type)
         except KeyError:
             raise ConfigurationImportError(
-                "invalid source 'type' specified for source #{:d}: {} (allowed types: {})"
-                .format(index, source_type,
-                        " / ".join(item.value for item in RepositorySourceType)))
+                "invalid source 'type' specified for source #{:d}: {} (allowed types: {})".format(
+                    index,
+                    source_type,
+                    " / ".join(item.value for item in RepositorySourceType),
+                )
+            )
         plugin_sources.append(MuninPluginSource(**source_settings))
     return plugin_sources
 
@@ -1143,7 +1426,9 @@ def _parse_sources_from_configuration(source_configurations):
 def _parse_website_settings_from_configuration(website_config, baseurl_override=None):
     result = {}
     if baseurl_override is None:
-        result["baseurl"] = website_config.get("baseurl", "http://localhost/").rstrip("/") + "/"
+        result["baseurl"] = (
+            website_config.get("baseurl", "http://localhost/").rstrip("/") + "/"
+        )
     else:
         result["baseurl"] = baseurl_override
     result["hugo_environment"] = website_config.get("hugo_environment", "production")
@@ -1160,11 +1445,16 @@ def main():
         baseurl_override = args.export_url
     try:
         configuration = load_configuration_file(args.config)
-        plugin_sources = _parse_sources_from_configuration(configuration.get("sources", []))
+        plugin_sources = _parse_sources_from_configuration(
+            configuration.get("sources", [])
+        )
         website_settings = _parse_website_settings_from_configuration(
-            configuration.get("website", {}), baseurl_override=baseurl_override)
+            configuration.get("website", {}), baseurl_override=baseurl_override
+        )
     except ConfigurationImportError as exc:
-        logging.error("Failed to import configuration file ({}): {}".format(args.config, exc))
+        logging.error(
+            "Failed to import configuration file ({}): {}".format(args.config, exc)
+        )
         sys.exit(2)
     if args.plugin_filenames:
         # replace the default "plugin_sources" with a limited set based on individual filenames
@@ -1174,17 +1464,27 @@ def main():
             dirname = os.path.dirname(plugin_filename)
             ignore_files = set(os.listdir(dirname)).difference({basename})
             custom_source = MuninPluginSource(
-                "manual", RepositorySourceType.DIRECTORY, dirname, ignore_files=ignore_files)
+                "manual",
+                RepositorySourceType.DIRECTORY,
+                dirname,
+                ignore_files=ignore_files,
+            )
             plugin_sources.append(custom_source)
     if wanted_action in {CommandLineAction.BUILD, CommandLineAction.SERVE}:
         hugo_export = MuninPluginsHugoExport(
-            args.template_directory, args.target_plugin_directory,
+            args.template_directory,
+            args.target_plugin_directory,
             baseurl=website_settings["baseurl"],
             hugo_environment=website_settings["hugo_environment"],
-            clean_export_directory=(not args.skip_collect))
+            clean_export_directory=(not args.skip_collect),
+        )
         action_async = publish_plugins_hugo(
-            plugin_sources, hugo_export, skip_collect=args.skip_collect,
-            skip_website=args.skip_website, show_statistics=args.show_statistics)
+            plugin_sources,
+            hugo_export,
+            skip_collect=args.skip_collect,
+            skip_website=args.skip_website,
+            show_statistics=args.show_statistics,
+        )
         if not asyncio.run(action_async):
             sys.exit(1)
         if args.show_metadata:
