@@ -6,7 +6,6 @@ on:
 jobs:
   build-und-verify:
     name: Build and Verify
-    # the gallery requires at least hugo 0.73 due to changes regarding taxonomies and terms (i.e. at least Ubuntu 20.04 or Debian Buster)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -15,6 +14,20 @@ jobs:
           submodules: True
       - name: Install dependencies
         run: sudo apt-get install --yes --quiet codespell git hugo jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml
+      # The gallery requires at least hugo 0.73 due to changes regarding taxonomies and terms.
+      # This means at least Debian Buster or Ubuntu Hirsute (21.04) is required.
+      # But sadly this is a bit complicated:
+      # - Debian Bullseye: Debian is not supported by github actions (at least not in 2022)
+      # - Ubuntu Hirsute: works, but it was removed from the Ubuntu mirrors in January 2022
+      # - Ubuntu Impish: the hugo package requires a newer libc version (compared to Ubuntu Focal)
+      # The solution is a bit dirty: use Ubuntu Focal as the base image and install the hugo
+      # package from Debian Bullseye (shipping the same version of libc).
+      - name: Install newer hugo version
+        run: |
+          sudo apt-get install --yes debian-archive-keyring
+          sudo cp /usr/share/keyrings/debian-archive-*.gpg /etc/apt/trusted.gpg.d/
+          sudo add-apt-repository "deb http://ftp.debian.org/debian/ bullseye main"
+          sudo apt-get install --yes --quiet --target-release focal hugo/bullseye
       - name: Build website and metadata
         run: |
           mkdir -p build
