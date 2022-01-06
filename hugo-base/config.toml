@@ -29,6 +29,7 @@ rssLimit = 200
   description = "Collection of all plugins maintained by the Munin developers"
   # disable the navigation footer provided by ace-documentation
   disableReadmoreNav = true
+  custom_css = ["/css/munin-plugin-gallery.css"]
 
 [taxonomies]
   capability = "capabilities"
