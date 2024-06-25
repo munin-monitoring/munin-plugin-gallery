@@ -22,12 +22,6 @@ jobs:
       # - Ubuntu Impish: the hugo package requires a newer libc version (compared to Ubuntu Focal)
       # The solution is a bit dirty: use Ubuntu Focal as the base image and install the hugo
       # package from Debian Bullseye (shipping the same version of libc).
-      - name: Install newer hugo version
-        run: |
-          sudo apt-get install --yes debian-archive-keyring
-          sudo cp /usr/share/keyrings/debian-archive-*.gpg /etc/apt/trusted.gpg.d/
-          sudo add-apt-repository "deb http://ftp.debian.org/debian/ bullseye main"
-          sudo apt-get install --yes --quiet --target-release focal hugo/bullseye
       - name: Build website and metadata
         run: |
           mkdir -p build
