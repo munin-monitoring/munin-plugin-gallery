@@ -1133,7 +1133,7 @@ class MuninPluginsHugoExport:
                 plugin_file.write("<!--more-->" + os.linesep)
             show_source_format_string = """
 {{< collapse title="Source Code" >}}
-{{< code lang="%(language)s" file="/%(path)s" >}}
+{{< code lang="%(language)s" file="/%(path)s" />}}
 {{< /collapse >}}
 """
             plugin_file.write(
