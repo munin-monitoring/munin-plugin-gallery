@@ -43,7 +43,7 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := (index $.Site.Taxonomies.keywords (urlize .)).Page -}}
+            {{- $page := (index $.Site.Taxonomies.keywords (lower .)).Page -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
@@ -64,7 +64,7 @@
       <dd>
         <ul>
           {{ range . }}
-            {{- $page := (default (index $.Site.Taxonomies.authors (anchorize .)) (index $.Site.Taxonomies.authors (urlize .))).Page -}}
+            {{- $page := (default (index $.Site.Taxonomies.authors (anchorize .)) (index $.Site.Taxonomies.authors (lower .))).Page -}}
             <li><a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a></li>
           {{ end }}
         </ul>
