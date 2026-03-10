@@ -62,6 +62,9 @@ INDEXING_IGNORE_WORDS_FILE = os.path.join(
 SPDX_LICENSE_DATA_URL = (
     "https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json"
 )
+SPDX_LICENSE_CACHE_PATH = os.path.join(
+    os.path.dirname(__file__), "build", "licenses.json"
+)
 
 
 class RepositorySourceType(enum.Enum):
@@ -194,16 +197,23 @@ class LicenseParser:
 
     @staticmethod
     def _download_license_data():
-        try:
-            with urllib.request.urlopen(SPDX_LICENSE_DATA_URL) as download:
-                raw = download.read()
-        except IOError as exc:
-            logging.warning(
-                "Failed to download SPDX license data (%s): %s",
-                SPDX_LICENSE_DATA_URL,
-                exc,
-            )
-            return {}
+        if os.path.exists(SPDX_LICENSE_CACHE_PATH):
+            with open(SPDX_LICENSE_CACHE_PATH, "r", encoding="utf-8") as f:
+                raw = f.read()
+        else:
+            try:
+                with urllib.request.urlopen(SPDX_LICENSE_DATA_URL) as download:
+                    raw = download.read()
+                with open(SPDX_LICENSE_CACHE_PATH, 'w', encoding="utf-8") as f:
+                    f.write(raw.decode())
+            except IOError as exc:
+                logging.warning(
+                    "Failed to download SPDX license data (%s): %s",
+                    SPDX_LICENSE_DATA_URL,
+                    exc,
+                )
+                return {}
+
         try:
             data = json.loads(raw)
         except ValueError as exc:
