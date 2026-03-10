@@ -19,6 +19,19 @@ help:
 .PHONY: build
 build: $(STAMP_PLUGIN_GALLERY_GENERATOR)
 
+.PHONY: build-docker
+build-docker: #build pages with hugo in a docker container
+	docker run --rm -it\
+	    --name munin-plugin-gallery-build\
+	    --volume `pwd`:/data\
+	    munin-plugin-gallery-build:latest\
+	    sh -c 'cd data && make build'
+
+.PHONY: build-docker-build-image
+build-docker-build-image: #create the docker image to build the pages with hugo
+	cd docker/build \
+	&& docker build . --tag munin-plugin-gallery-build:latest
+
 $(STAMP_PLUGIN_GALLERY_GENERATOR): Makefile $(GENERATOR_BIN) config.yml
 	"$(GENERATOR_BIN)" build
 	touch "$@"
