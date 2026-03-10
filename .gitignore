@@ -1,4 +1,4 @@
-build/
-hugo-base/resources/
-hugo-base/public/
-__pycache__/
+/build/
+/hugo-base/resources/
+/hugo-base/public/
+/__pycache__/
