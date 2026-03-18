@@ -62,6 +62,9 @@ INDEXING_IGNORE_WORDS_FILE = os.path.join(
 SPDX_LICENSE_DATA_URL = (
     "https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json"
 )
+SPDX_LICENSE_CACHE_PATH = os.path.join(
+    os.path.dirname(__file__), "build", "licenses.json"
+)
 
 
 class RepositorySourceType(enum.Enum):
@@ -194,16 +197,23 @@ class LicenseParser:
 
     @staticmethod
     def _download_license_data():
-        try:
-            with urllib.request.urlopen(SPDX_LICENSE_DATA_URL) as download:
-                raw = download.read()
-        except IOError as exc:
-            logging.warning(
-                "Failed to download SPDX license data (%s): %s",
-                SPDX_LICENSE_DATA_URL,
-                exc,
-            )
-            return {}
+        if os.path.exists(SPDX_LICENSE_CACHE_PATH):
+            with open(SPDX_LICENSE_CACHE_PATH, "r", encoding="utf-8") as f:
+                raw = f.read()
+        else:
+            try:
+                with urllib.request.urlopen(SPDX_LICENSE_DATA_URL) as download:
+                    raw = download.read()
+                with open(SPDX_LICENSE_CACHE_PATH, 'w', encoding="utf-8") as f:
+                    f.write(raw.decode())
+            except IOError as exc:
+                logging.warning(
+                    "Failed to download SPDX license data (%s): %s",
+                    SPDX_LICENSE_DATA_URL,
+                    exc,
+                )
+                return {}
+
         try:
             data = json.loads(raw)
         except ValueError as exc:
@@ -412,7 +422,7 @@ class MuninPlugin:
                 raw_content = raw.read().decode(errors="ignore")
             self.plugin_code = self._preprocess_raw_code(raw_content)
             self.documentation = await self._parse_documentation()
-            self.family = self._parse_family()
+            self.families = self._parse_families()
             self.capabilities = self._parse_capabilities()
             self.categories = self._parse_categories()
             if self.repository_source:
@@ -629,11 +639,11 @@ class MuninPlugin:
             result.add("wildcard")
         return tuple(sorted(result))
 
-    def _parse_family(self):
+    def _parse_families(self):
         for line in self.plugin_code.splitlines():
             match = self.FAMILY_REGEX.search(line)
             if match:
-                return match.groups()[0].strip().lower()
+                return match.groups()[0].strip().lower().split()
         else:
             return None
 
@@ -664,7 +674,7 @@ class MuninPlugin:
     def get_details(self):
         return {
             "documentation": bool(self.documentation),
-            "family": self.family,
+            "families": self.families,
             "capabilities": self.capabilities,
             "categories": set(self.categories),
             "keywords": set(self.path_keywords),
@@ -1048,8 +1058,8 @@ class MuninPluginsHugoExport:
             result["categories"] = tuple(plugin.categories)
         else:
             missing_details.add("categories")
-        if plugin.family:
-            result["families"] = [plugin.family]
+        if plugin.families:
+            result["families"] = tuple(plugin.families)
         if plugin.capabilities:
             result["capabilities"] = tuple(plugin.capabilities)
         if plugin.path_keywords:
@@ -1133,7 +1143,7 @@ class MuninPluginsHugoExport:
                 plugin_file.write("<!--more-->" + os.linesep)
             show_source_format_string = """
 {{< collapse title="Source Code" >}}
-{{< code lang="%(language)s" file="/%(path)s" >}}
+{{< code lang="%(language)s" file="/%(path)s" />}}
 {{< /collapse >}}
 """
             plugin_file.write(
@@ -1157,7 +1167,7 @@ class MuninPluginsHugoExport:
             "missing_documentation": len(
                 [p for p in self.plugins if not p.documentation]
             ),
-            "missing_family": len([p for p in self.plugins if not p.family]),
+            "missing_family": len([p for p in self.plugins if not p.families]),
             "missing_capabilities": len(
                 [p for p in self.plugins if not p.capabilities]
             ),
@@ -1255,7 +1265,7 @@ def get_plugin_statistics(plugins):
         statistics["all"].append(plugin)
         if not plugin.documentation:
             statistics["missing_documentation"].append(plugin)
-        if not plugin.family:
+        if not plugin.families:
             statistics["missing_family"].append(plugin)
         if not plugin.capabilities:
             statistics["missing_capabilities"].append(plugin)
