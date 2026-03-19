@@ -2,6 +2,7 @@ on:
   push: null
   schedule:
     - cron: "12 3 * * *"
+  workflow_dispatch:
 
 jobs:
   build-und-verify:
