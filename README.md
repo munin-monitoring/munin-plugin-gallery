@@ -19,6 +19,29 @@ is used for the [Munin Plugin Gallery](https://gallery.munin-monitoring.org/).
 * local directory
 
 
+# Building
+
+```shell
+git clone https://github.com/munin-monitoring/munin-plugin-gallery.git
+cd munin-plugin-gallery
+make build-docker-build-image
+make build-docker
+```
+
+The generated static HTML files are in `hugo-base/public/` and need to be served
+via a web server to work correctly:
+
+```shell
+php -S 127.0.0.1:1313 -t hugo-base/public/
+```
+
+or, when Hugo and all dependencies are installed locally:
+
+```shell
+./plugin-gallery-generator serve
+```
+
+
 # Hugo export
 
 The configuration and layout of the exported website uses the content of the directory `hugo-base`.
