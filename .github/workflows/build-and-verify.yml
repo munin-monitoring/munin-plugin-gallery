@@ -17,7 +17,9 @@ jobs:
         with:
           submodules: True
       - name: Install dependencies
-        run: sudo apt-get install --yes --quiet codespell git hugo jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml
+        run: sudo apt-get install --yes --quiet codespell git jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml wget
+      - name: Install hugo 0.131.0
+        run: wget --no-verbose https://github.com/gohugoio/hugo/releases/download/v0.131.0/hugo_extended_0.131.0_linux-amd64.deb && sudo dpkg -i hugo_extended_0.131.0_linux-amd64.deb
       - name: Build website and metadata
         run: |
           mkdir -p build
