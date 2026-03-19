@@ -21,6 +21,7 @@ build: $(STAMP_PLUGIN_GALLERY_GENERATOR)
 
 .PHONY: build-docker
 build-docker: #build pages with hugo in a docker container
+	mkdir -p $(BUILD_DIR)
 	docker run --rm -it\
 	    --name munin-plugin-gallery-build\
 	    --volume `pwd`:/data\
