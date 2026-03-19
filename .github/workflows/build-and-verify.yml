@@ -1,3 +1,6 @@
+---
+name: Build and Verify
+
 on:
   push: null
   schedule:
