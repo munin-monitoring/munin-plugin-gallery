@@ -1036,7 +1036,7 @@ class MuninPluginsHugoExport:
             return False
 
     async def build(self):
-        return await self._run_hugo()
+        return await self._run_hugo(action=None, hide_output=False)
 
     async def serve(self):
         return await self._run_hugo("serve", hide_output=False)

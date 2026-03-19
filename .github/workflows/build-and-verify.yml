@@ -21,7 +21,7 @@ jobs:
       - name: Build website and metadata
         run: |
           mkdir -p build
-          ./plugin-gallery-generator --show-metadata build >build/metadata.yml
+          ./plugin-gallery-generator --show-metadata build
       - name: Analyze the code and spelling
         run: make lint
       - name: Upload static website
