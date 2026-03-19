@@ -25,12 +25,12 @@ jobs:
       - name: Analyze the code and spelling
         run: make lint
       - name: Upload static website
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: website
           path: hugo-base/public
       - name: Upload metadata
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: metadata
           path: build/metadata.yml
