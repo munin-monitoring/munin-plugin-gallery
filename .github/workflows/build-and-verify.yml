@@ -1,40 +1,31 @@
+---
+name: Build and Verify
+
 on:
   push: null
   schedule:
     - cron: "12 3 * * *"
+  workflow_dispatch:
 
 jobs:
   build-und-verify:
     name: Build and Verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: True
       - name: Install dependencies
-        run: sudo apt-get install --yes --quiet codespell git hugo jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml
-      # The gallery requires at least hugo 0.73 due to changes regarding taxonomies and terms.
-      # This means at least Debian Buster or Ubuntu Hirsute (21.04) is required.
-      # But sadly this is a bit complicated:
-      # - Debian Bullseye: Debian is not supported by github actions (at least not in 2022)
-      # - Ubuntu Hirsute: works, but it was removed from the Ubuntu mirrors in January 2022
-      # - Ubuntu Impish: the hugo package requires a newer libc version (compared to Ubuntu Focal)
-      # The solution is a bit dirty: use Ubuntu Focal as the base image and install the hugo
-      # package from Debian Bullseye (shipping the same version of libc).
-      - name: Build website and metadata
-        run: |
-          mkdir -p build
-          ./plugin-gallery-generator --show-metadata build >build/metadata.yml
+        run: sudo apt-get install --yes --quiet codespell git jq libpod-markdown-perl make perl-doc python3-aiohttp python3-flake8 python3-yaml wget
+      - name: Install hugo 0.131.0
+        run: wget --no-verbose https://github.com/gohugoio/hugo/releases/download/v0.131.0/hugo_extended_0.131.0_linux-amd64.deb && sudo dpkg -i hugo_extended_0.131.0_linux-amd64.deb
+      - name: Build website
+        run: make build
       - name: Analyze the code and spelling
         run: make lint
       - name: Upload static website
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: website
           path: hugo-base/public
-      - name: Upload metadata
-        uses: actions/upload-artifact@v2
-        with:
-          name: metadata
-          path: build/metadata.yml
