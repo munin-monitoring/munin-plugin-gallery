@@ -34,6 +34,7 @@ build-docker-build-image: #create the docker image to build the pages with hugo
 	&& docker build . --tag munin-plugin-gallery-build:latest
 
 $(STAMP_PLUGIN_GALLERY_GENERATOR): Makefile $(GENERATOR_BIN) config.yml
+	mkdir -p $(BUILD_DIR)
 	"$(GENERATOR_BIN)" build
 	touch "$@"
 
